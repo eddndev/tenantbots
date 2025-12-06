@@ -1,0 +1,57 @@
+services:
+  app:
+    image: ${APP_IMAGE:-ghcr.io/eddndev/tenantbots:latest}
+    restart: always
+    environment:
+      - NODE_ENV=production
+      - DB_HOST=db
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - MYSQL_ROOT_PASSWORD=${DB_ROOT_PASSWORD}
+      - MYSQL_DATABASE=tenantbots
+    volumes:
+      - ./auth_info_baileys:/app/auth_info_baileys
+    depends_on:
+      - db
+      - redis
+    networks:
+      - bot-network
+
+  db:
+    image: mysql:8.0
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: tenantbots
+    volumes:
+      - db_data:/var/lib/mysql
+    networks:
+      - bot-network
+
+  redis:
+    image: redis:7-alpine
+    restart: always
+    volumes:
+      - redis_data:/data
+    networks:
+      - bot-network
+
+  nginx:
+    image: nginx:alpine
+    restart: always
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - app
+    networks:
+      - bot-network
+
+networks:
+  bot-network:
+    driver: bridge
+
+volumes:
+  db_data:
+  redis_data:
