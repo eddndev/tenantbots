@@ -24,9 +24,8 @@ export class WhatsAppService {
 
         this.sock = makeWASocket({
             auth: state,
-            printQRInTerminal: true,
             logger: this.logger,
-            browser: ['TenantBot', 'Chrome', '1.0.0'],
+            browser: ['Ubuntu', 'Chrome', '20.0.04'], // Standard signature to avoid 405
         });
 
         this.sock.ev.on('creds.update', saveCreds);
