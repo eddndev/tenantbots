@@ -1,5 +1,6 @@
 import Fastify from 'fastify';
 import pino from 'pino';
+import cors from '@fastify/cors';
 import { WhatsAppService } from './whatsapp';
 import { sessionRoutes } from './routes/sessions';
 
@@ -18,6 +19,12 @@ const server = Fastify({
             },
         },
     },
+});
+
+// Enable CORS
+server.register(cors, {
+    origin: '*', // Allow all origins (including localhost:4321)
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
 });
 
 // Security Middleware
