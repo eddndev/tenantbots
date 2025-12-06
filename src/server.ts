@@ -16,7 +16,9 @@ const server = Fastify({
                 translateTime: 'HH:MM:ss Z',
                 ignore: 'pid,hostname',
             },
-        });
+        },
+    },
+});
 
 const start = async () => {
     try {
