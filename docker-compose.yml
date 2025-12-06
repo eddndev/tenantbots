@@ -10,9 +10,10 @@ services:
       - MYSQL_ROOT_PASSWORD=${DB_ROOT_PASSWORD}
       - MYSQL_DATABASE=tenantbots
       - DATABASE_URL=mysql://root:${DB_ROOT_PASSWORD}@db:3306/tenantbots
+      - API_KEY=${API_KEY}
     volumes:
       - ./auth_info_baileys:/app/auth_info_baileys
-    command: sh -c "npx prisma migrate deploy && node dist/server.js"
+    command: sh -c "npx prisma db push && node dist/server.js"
     depends_on:
       db:
         condition: service_healthy

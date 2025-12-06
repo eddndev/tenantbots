@@ -57,6 +57,7 @@ jobs:
           
           # Create .env file for database password
           echo "DB_ROOT_PASSWORD=$DB_ROOT_PASSWORD" > .env
+          echo "API_KEY=${{ secrets.API_KEY }}" >> .env
           echo "APP_IMAGE=ghcr.io/${{ github.repository }}:latest" >> .env
           
           # Login to GHCR on VPS
