@@ -51,10 +51,18 @@ services:
       - "80:80"
     volumes:
       - ./nginx.conf:/etc/nginx/conf.d/default.conf
+      - certbot_conf:/etc/letsencrypt
+      - certbot_www:/var/www/certbot
     depends_on:
       - app
     networks:
       - bot-network
+
+  certbot:
+    image: certbot/certbot
+    volumes:
+      - certbot_conf:/etc/letsencrypt
+      - certbot_www:/var/www/certbot
 
 networks:
   bot-network:
@@ -63,3 +71,5 @@ networks:
 volumes:
   db_data:
   redis_data:
+  certbot_conf:
+  certbot_www:
