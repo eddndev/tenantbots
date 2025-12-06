@@ -31,25 +31,42 @@ jobs:
         context: .
         push: true
         tags: ghcr.io/${{ github.repository }}:latest
-        
-    - name: Deploy via SSH
-      uses: appleboy/ssh-action@v1.0.3
+
+    - name: Copy docker-compose and config
+      uses: appleboy/scp-action@v0.1.7
       with:
         host: ${{ secrets.VPS_HOST }}
         username: ${{ secrets.VPS_USER }}
         key: ${{ secrets.VPS_SSH_KEY }}
         port: ${{ secrets.VPS_PORT }}
+        source: "docker-compose.yml,nginx.conf"
+        target: "/root/tenantbots/"
+        
+    - name: Deploy via SSH
+      uses: appleboy/ssh-action@v1.0.3
+      env:
+        DB_ROOT_PASSWORD: ${{ secrets.DB_ROOT_PASSWORD }}
+      with:
+        host: ${{ secrets.VPS_HOST }}
+        username: ${{ secrets.VPS_USER }}
+        key: ${{ secrets.VPS_SSH_KEY }}
+        port: ${{ secrets.VPS_PORT }}
+        envs: DB_ROOT_PASSWORD
         script: |
-          # Login to GHCR
+          cd /root/tenantbots
+          
+          # Create .env file for database password
+          echo "DB_ROOT_PASSWORD=$DB_ROOT_PASSWORD" > .env
+          echo "APP_IMAGE=ghcr.io/${{ github.repository }}:latest" >> .env
+          
+          # Login to GHCR on VPS
           echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
           
-          # Navigate to app directory (create if needed)
-          mkdir -p /root/tenantbots
-          cd /root/tenantbots
-
-          # We need to transfer the docker-compose.yml and nginx.conf to the server
-          # Note: usually we scp these, but for simplicity in this action we can re-create them or pull from git.
-          # Better approach for strictly GitOps: The action checks out code ON the server or we use SCP.
-          # Here we will use a trick to write the files from the repo artifact if we had them, 
-          # but since we are building a docker image, the compose file isn't INSIDE the image.
-          # Let's use a simpler method: The repo is cloned on the runner, we can SCP the compose file.
+          # Pull latest images
+          docker compose pull
+          
+          # Restart services
+          docker compose up -d --remove-orphans
+          
+          # Cleanup unused images
+          docker image prune -f
