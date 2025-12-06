@@ -2,6 +2,7 @@ import makeWASocket, {
     DisconnectReason,
     useMultiFileAuthState,
     WASocket,
+    Browsers,
 } from '@whiskeysockets/baileys';
 import { Boom } from '@hapi/boom';
 import pino from 'pino';
@@ -25,7 +26,7 @@ export class WhatsAppService {
         this.sock = makeWASocket({
             auth: state,
             logger: this.logger,
-            browser: ['Ubuntu', 'Chrome', '20.0.04'], // Standard signature to avoid 405
+            browser: Browsers.macOS('Desktop'), // More stable signature for v6.7.x
         });
 
         this.sock.ev.on('creds.update', saveCreds);
