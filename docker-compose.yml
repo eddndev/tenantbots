@@ -9,6 +9,7 @@ services:
       - REDIS_PORT=6379
       - MYSQL_ROOT_PASSWORD=${DB_ROOT_PASSWORD}
       - MYSQL_DATABASE=tenantbots
+      - DATABASE_URL=mysql://root:${DB_ROOT_PASSWORD}@db:3306/tenantbots
     volumes:
       - ./auth_info_baileys:/app/auth_info_baileys
     depends_on:
