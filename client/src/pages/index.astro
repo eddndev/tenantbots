@@ -1,70 +1,54 @@
 ---
 import Layout from "../layouts/Layout.astro";
+import { BotCard } from "../components/BotCard";
+import "../styles/global.css";
+
+// In a real app, we'd fetch the list of bots from the server server-side
+// But since we need the API Key (client-side secret), we'll simulate one bot for now
+// or ask the user for the key.
 ---
 
-<Layout title="Dashboard | TenantBots">
-	<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-		<!-- Stats Card -->
-		<div class="glass-panel p-6 rounded-xl space-y-2">
-			<span class="text-zinc-500 text-sm font-mono">ACTIVE SESSIONS</span>
-			<div class="flex items-end justify-between">
-				<span class="text-3xl font-light text-white">0</span>
-				<span
-					class="text-brand text-xs px-2 py-1 rounded bg-brand/10 border border-brand/20"
-					>LIVE</span
-				>
-			</div>
-		</div>
-
-		<!-- Action Card -->
-		<div
-			class="glass-panel p-6 rounded-xl space-y-4 md:col-span-2 flex items-center justify-between"
+<Layout title="TenantBots Dashboard">
+	<main className="min-h-screen bg-bg-surface p-8">
+		<header
+			className="max-w-5xl mx-auto mb-12 flex justify-between items-center"
 		>
 			<div>
-				<h2 class="text-lg font-medium text-white">Deploy New Agent</h2>
-				<p class="text-zinc-400 text-sm mt-1">
-					Initialize a new WhatsApp instance for a tenant.
-				</p>
-			</div>
-			<button
-				class="bg-brand hover:bg-brand-dim text-white px-6 py-2.5 rounded-lg text-sm font-medium transition-colors cursor-pointer border border-white/10 shadow-lg shadow-brand/20"
-			>
-				+ Create Instance
-			</button>
-		</div>
-
-		<!-- Sessions Grid Mockup -->
-		<div class="col-span-1 md:col-span-3">
-			<h3 class="text-zinc-400 text-sm font-mono mb-4 mt-4">
-				INSTANCE MONITORS
-			</h3>
-
-			<div
-				class="glass-panel rounded-xl p-12 text-center border-dashed border-zinc-800"
-			>
-				<div
-					class="w-16 h-16 bg-zinc-900 rounded-full flex items-center justify-center mx-auto mb-4 border border-zinc-800"
+				<h1
+					className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-purple-400"
 				>
-					<svg
-						xmlns="http://www.w3.org/2000/svg"
-						fill="none"
-						viewBox="0 0 24 24"
-						stroke-width="1.5"
-						stroke="currentColor"
-						class="w-6 h-6 text-zinc-600"
-					>
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							d="M12 9v6m3-3H9m12 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
-						></path>
-					</svg>
-				</div>
-				<p class="text-zinc-500">No active instances found.</p>
-				<p class="text-zinc-600 text-sm mt-1">
-					Create your first agent to start monitoring.
+					TenantBots
+				</h1>
+				<p className="text-slate-500 mt-1">
+					Gestión de sesiones de WhatsApp
 				</p>
 			</div>
-		</div>
-	</div>
+			<div className="text-sm text-slate-400">v1.0.0</div>
+		</header>
+
+		<section className="max-w-5xl mx-auto">
+			<div
+				className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 mb-8"
+			>
+				<h2 className="text-lg font-semibold mb-4 text-slate-800">
+					Panel de Control
+				</h2>
+				<div
+					className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+				>
+					{
+						/* For Demo, we hardcode the API Key injection via a client wrapper. 
+                        In production, you'd have a login page. */
+					}
+					<BotCard
+						client:load
+						id="bot-1"
+						name="Bot Principal"
+						initialStatus="DISCONNECTED"
+						apiKey="Q[2cHLQCJJR(sFsx.@h+2Rg8cK/z2!c.J9lMK(*J"
+					/>
+				</div>
+			</div>
+		</section>
+	</main>
 </Layout>
