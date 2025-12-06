@@ -64,10 +64,31 @@ export class WhatsAppService {
         });
 
         this.sock.ev.on('messages.upsert', async (m) => {
-            if (m.type === 'notify' || m.type === 'append') {
+            if (m.type === 'notify') {
                 for (const msg of m.messages) {
-                    if (!msg.key.fromMe && m.type === 'notify') {
-                        console.log('Reply to', msg.key.remoteJid);
+                    if (!msg.key.fromMe) {
+                        const text = msg.message?.conversation || msg.message?.extendedTextMessage?.text || '';
+
+                        if (text.toLowerCase().trim() === 'debug') {
+                            const jid = msg.key.remoteJid!;
+
+                            // 1. Mensaje inmediato
+                            await this.sock?.sendMessage(jid, {
+                                text: 'Este es un mensaje de prueba de la API 🤖'
+                            });
+
+                            // 2. Delay y segundo mensaje
+                            await new Promise(r => setTimeout(r, 2000));
+                            await this.sock?.sendMessage(jid, {
+                                text: 'Este es el segundo mensaje en lista tras haber escuchado debug ⏱️'
+                            });
+
+                            // 3. Delay y frase final
+                            await new Promise(r => setTimeout(r, 2000));
+                            await this.sock?.sendMessage(jid, {
+                                text: 'El código es poesía, y los bugs son solo rimas no deseadas. 📜✨'
+                            });
+                        }
                     }
                 }
             }
