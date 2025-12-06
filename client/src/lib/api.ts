@@ -23,5 +23,16 @@ export const api = {
         });
         if (!res.ok) throw new Error(await res.text());
         return res.json();
+    },
+
+    async delete(endpoint: string, apiKey: string) {
+        const res = await fetch(`${API_URL}${endpoint}`, {
+            method: 'DELETE',
+            headers: {
+                'x-api-key': apiKey
+            }
+        });
+        if (!res.ok) throw new Error(await res.text());
+        return res.json();
     }
 };

@@ -38,4 +38,13 @@ export class SessionManager {
             this.startSession(s.id);
         }
     }
+
+    async deleteSession(sessionId: string) {
+        const service = this.sessions.get(sessionId);
+        if (service) {
+            // Ideally call service.disconnect() or similar if implemented
+            // For now, just remove from memory
+            this.sessions.delete(sessionId);
+        }
+    }
 }

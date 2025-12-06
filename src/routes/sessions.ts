@@ -34,4 +34,17 @@ export async function sessionRoutes(fastify: FastifyInstance) {
         const { status, qr } = manager.getSessionStatus(request.params.id);
         return { status, qr };
     });
+
+    // Delete a session
+    fastify.delete<{ Params: { id: string } }>('/sessions/:id', async (request, reply) => {
+        const { id } = request.params;
+
+        // Stop in memory
+        await manager.deleteSession(id);
+
+        // Delete from DB
+        await prisma.session.delete({ where: { id } });
+
+        return { status: 'deleted' };
+    });
 }
