@@ -20,6 +20,14 @@ const server = Fastify({
     },
 });
 
+// Register Routes
+server.register(sessionRoutes);
+
+// Root Route
+server.get('/', async () => {
+    return { status: 'online', message: 'TenantBots API Running 🚀' };
+});
+
 const start = async () => {
     try {
         const address = await server.listen({ port: 3000, host: '0.0.0.0' });
