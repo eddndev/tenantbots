@@ -1,0 +1,50 @@
+---
+import '../styles/global.css';
+
+interface Props {
+	title: string;
+}
+
+const { title } = Astro.props;
+---
+
+<!doctype html>
+<html lang="es">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="description" content="TenantBots Dashboard" />
+		<meta name="viewport" content="width=device-width" />
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<link rel="preconnect" href="https://fonts.googleapis.com">
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+		<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+		<meta name="generator" content={Astro.generator} />
+		<title>{title}</title>
+	</head>
+	<body class="antialiased selection:bg-brand selection:text-white">
+		<div class="fixed inset-0 z-0 bg-grid-pattern pointer-events-none"></div>
+		
+		<main class="relative z-10 min-h-screen flex flex-col">
+			<nav class="border-b border-white/5 glass-panel sticky top-0 z-50">
+				<div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+					<div class="flex items-center gap-3">
+						<div class="w-8 h-8 rounded bg-brand/20 flex items-center justify-center border border-brand/50">
+							<span class="text-brand font-bold">T</span>
+						</div>
+						<span class="font-medium tracking-tight">TenantBots</span>
+					</div>
+					<div class="flex items-center gap-4 text-sm text-zinc-400">
+						<div class="flex items-center gap-2">
+							<span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+							<span>System Operational</span>
+						</div>
+					</div>
+				</div>
+			</nav>
+
+			<div class="flex-1 w-full max-w-7xl mx-auto px-6 py-8">
+				<slot />
+			</div>
+		</main>
+	</body>
+</html>

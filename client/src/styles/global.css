@@ -1,0 +1,46 @@
+@import "tailwindcss";
+
+@theme {
+  /* Konpo Brand Colors */
+  --color-brand: #8b5cf6;
+  --color-brand-glow: #8b5cf6;
+  --color-brand-dim: #4c1d95;
+  
+  --color-surface-900: #09090b; /* Zinc 950 essentially */
+  --color-surface-800: #18181b;
+  --color-surface-700: #27272a;
+  
+  --color-grid-line: rgba(255, 255, 255, 0.05);
+
+  /* Fonts */
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+}
+
+/* Base Styles */
+:root {
+  color-scheme: dark;
+}
+
+body {
+  background-color: var(--color-surface-900);
+  color: #e4e4e7; /* Zinc 200 */
+  font-family: var(--font-sans);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Grid Background Effect */
+.bg-grid-pattern {
+  background-size: 40px 40px;
+  background-image: linear-gradient(to right, var(--color-grid-line) 1px, transparent 1px),
+                    linear-gradient(to bottom, var(--color-grid-line) 1px, transparent 1px);
+  mask-image: linear-gradient(to bottom, black 40%, transparent 100%);
+}
+
+/* Utilities */
+.glass-panel {
+  background: rgba(24, 24, 27, 0.6);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}

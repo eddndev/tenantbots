@@ -3,6 +3,11 @@ import pino from 'pino';
 import { WhatsAppService } from './whatsapp';
 import { sessionRoutes } from './routes/sessions';
 
+import fastifyStatic from '@fastify/static';
+import path from 'path';
+
+// ... imports
+
 const server = Fastify({
     logger: {
         transport: {
@@ -15,9 +20,15 @@ const server = Fastify({
     },
 });
 
+// Register Static Files (Frontend)
+server.register(fastifyStatic, {
+    root: path.join(__dirname, '../../client/dist'),
+    prefix: '/', // optional: default '/'
+});
+
 server.register(sessionRoutes);
 
-server.get('/', async (request, reply) => {
+server.get('/api/health', async (request, reply) => {
     return { status: 'ok', uptime: process.uptime() };
 });
 

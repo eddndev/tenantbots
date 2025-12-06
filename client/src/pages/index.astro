@@ -1,0 +1,70 @@
+---
+import Layout from "../layouts/Layout.astro";
+---
+
+<Layout title="Dashboard | TenantBots">
+	<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+		<!-- Stats Card -->
+		<div class="glass-panel p-6 rounded-xl space-y-2">
+			<span class="text-zinc-500 text-sm font-mono">ACTIVE SESSIONS</span>
+			<div class="flex items-end justify-between">
+				<span class="text-3xl font-light text-white">0</span>
+				<span
+					class="text-brand text-xs px-2 py-1 rounded bg-brand/10 border border-brand/20"
+					>LIVE</span
+				>
+			</div>
+		</div>
+
+		<!-- Action Card -->
+		<div
+			class="glass-panel p-6 rounded-xl space-y-4 md:col-span-2 flex items-center justify-between"
+		>
+			<div>
+				<h2 class="text-lg font-medium text-white">Deploy New Agent</h2>
+				<p class="text-zinc-400 text-sm mt-1">
+					Initialize a new WhatsApp instance for a tenant.
+				</p>
+			</div>
+			<button
+				class="bg-brand hover:bg-brand-dim text-white px-6 py-2.5 rounded-lg text-sm font-medium transition-colors cursor-pointer border border-white/10 shadow-lg shadow-brand/20"
+			>
+				+ Create Instance
+			</button>
+		</div>
+
+		<!-- Sessions Grid Mockup -->
+		<div class="col-span-1 md:col-span-3">
+			<h3 class="text-zinc-400 text-sm font-mono mb-4 mt-4">
+				INSTANCE MONITORS
+			</h3>
+
+			<div
+				class="glass-panel rounded-xl p-12 text-center border-dashed border-zinc-800"
+			>
+				<div
+					class="w-16 h-16 bg-zinc-900 rounded-full flex items-center justify-center mx-auto mb-4 border border-zinc-800"
+				>
+					<svg
+						xmlns="http://www.w3.org/2000/svg"
+						fill="none"
+						viewBox="0 0 24 24"
+						stroke-width="1.5"
+						stroke="currentColor"
+						class="w-6 h-6 text-zinc-600"
+					>
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							d="M12 9v6m3-3H9m12 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
+						></path>
+					</svg>
+				</div>
+				<p class="text-zinc-500">No active instances found.</p>
+				<p class="text-zinc-600 text-sm mt-1">
+					Create your first agent to start monitoring.
+				</p>
+			</div>
+		</div>
+	</div>
+</Layout>
