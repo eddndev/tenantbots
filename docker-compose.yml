@@ -12,9 +12,12 @@ services:
       - DATABASE_URL=mysql://root:${DB_ROOT_PASSWORD}@db:3306/tenantbots
     volumes:
       - ./auth_info_baileys:/app/auth_info_baileys
+    command: sh -c "npx prisma migrate deploy && node dist/server.js"
     depends_on:
-      - db
-      - redis
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
     networks:
       - bot-network
 
@@ -26,6 +29,10 @@ services:
       MYSQL_DATABASE: tenantbots
     volumes:
       - db_data:/var/lib/mysql
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
+      timeout: 20s
+      retries: 10
     networks:
       - bot-network
 
