@@ -39,10 +39,10 @@ server.addHook('onRequest', async (request, reply) => {
 });
 
 // Register Routes
-server.register(sessionRoutes);
+server.register(sessionRoutes, { prefix: '/api' });
 
-// Root Route
-server.get('/', async () => {
+// Health Check
+server.get('/api/health', async () => {
     return { status: 'online', message: 'TenantBots API Running 🚀' };
 });
 

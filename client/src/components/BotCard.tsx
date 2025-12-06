@@ -4,8 +4,8 @@ import { Smartphone, RefreshCcw, Power, Trash2, CheckCircle, Loader2 } from 'luc
 import { api } from '../lib/api';
 
 interface BotProps {
-    id: string;
-    name: string;
+    id: string; // This is the 'name' of the bot in DB
+    name: string; // Display name
     initialStatus: string;
     apiKey: string;
 }
@@ -13,15 +13,31 @@ interface BotProps {
 export const BotCard = ({ id, name, initialStatus, apiKey }: BotProps) => {
     const [status, setStatus] = useState(initialStatus);
     const [qr, setQr] = useState<string | null>(null);
+    const [realId, setRealId] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
 
-    // Poll status/QR every 3 seconds if disconnected or QR
+    // Initial check: Does this bot exist in DB?
     useEffect(() => {
-        if (status === 'CONNECTED') return;
+        const checkExists = async () => {
+            try {
+                const sessions = await api.get('/sessions', apiKey);
+                const found = sessions.find((s: any) => s.name === id);
+                if (found) {
+                    setRealId(found.id);
+                    setStatus(found.status || 'OFFLINE');
+                }
+            } catch (e) { console.error(e); }
+        };
+        checkExists();
+    }, [id, apiKey]);
+
+    // Poll status/QR using the REAL ID
+    useEffect(() => {
+        if (!realId || status === 'CONNECTED') return;
 
         const interval = setInterval(async () => {
             try {
-                const data = await api.get(`/sessions/${id}`, apiKey);
+                const data = await api.get(`/sessions/${realId}`, apiKey);
                 setStatus(data.status);
                 if (data.status === 'QR' && data.qr) {
                     setQr(data.qr);
@@ -34,13 +50,15 @@ export const BotCard = ({ id, name, initialStatus, apiKey }: BotProps) => {
         }, 3000);
 
         return () => clearInterval(interval);
-    }, [id, apiKey, status]);
+    }, [realId, apiKey, status]);
 
     const handleStart = async () => {
         setLoading(true);
         try {
-            await api.post('/sessions', apiKey, { name: id }); // Using ID as name for simplicity
-            setStatus('CONNECTING'); // Trigger polling
+            // Start creates or returns the session with UUID
+            const res = await api.post('/sessions', apiKey, { name: id });
+            setRealId(res.sessionId); // Capture the real UUID
+            setStatus('CONNECTING');
         } catch (err) {
             alert('Error starting bot');
         } finally {
@@ -56,7 +74,7 @@ export const BotCard = ({ id, name, initialStatus, apiKey }: BotProps) => {
                     <h3 className="font-semibold text-lg text-slate-800">{name}</h3>
                 </div>
                 <span className={`text-xs px-2 py-1 rounded-full font-medium ${status === 'CONNECTED' ? 'bg-green-100 text-green-700' :
-                        status === 'QR' ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-500'
+                    status === 'QR' ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-500'
                     }`}>
                     {status}
                 </span>
@@ -87,7 +105,6 @@ export const BotCard = ({ id, name, initialStatus, apiKey }: BotProps) => {
                 >
                     {loading ? 'Iniciando...' : 'Iniciar Bot'}
                 </button>
-                {/* Future: Delete button */}
             </div>
         </div>
     );

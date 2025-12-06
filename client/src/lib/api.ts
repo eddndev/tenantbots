@@ -1,4 +1,4 @@
-const API_URL = import.meta.env.PUBLIC_API_URL || 'https://app.angelviajero.com.mx';
+const API_URL = import.meta.env.PUBLIC_API_URL || '/api';
 const API_KEY = import.meta.env.PUBLIC_API_KEY || ''; // Frontend needs a way to store this, for now user might input it or we build it
 
 export const api = {

@@ -46,7 +46,7 @@ services:
       - bot-network
 
   nginx:
-    image: nginx:alpine
+    build: ./client
     restart: always
     ports:
       - "80:80"
