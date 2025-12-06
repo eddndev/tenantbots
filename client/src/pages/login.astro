@@ -1,0 +1,17 @@
+---
+import Layout from "../layouts/Layout.astro";
+import { LoginForm } from "../components/LoginForm";
+---
+
+<Layout title="Login - TenantBots">
+    <div
+        class="fixed inset-0 z-0 bg-grid-pattern pointer-events-none opacity-50"
+    >
+    </div>
+
+    <main
+        class="relative z-10 min-h-screen flex flex-col items-center justify-center p-6"
+    >
+        <LoginForm client:load />
+    </main>
+</Layout>
