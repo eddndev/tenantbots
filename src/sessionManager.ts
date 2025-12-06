@@ -20,8 +20,14 @@ export class SessionManager {
     }
 
     getSessionStatus(sessionId: string) {
-        // Return status from memory or DB
-        return this.sessions.get(sessionId) ? 'ACTIVE' : 'INACTIVE';
+        const session = this.sessions.get(sessionId);
+        if (!session) {
+            return { status: 'DISCONNECTED', qr: undefined };
+        }
+        return {
+            status: session.status,
+            qr: session.qr
+        };
     }
 
     // Method to restore all sessions on server restart

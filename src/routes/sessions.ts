@@ -31,7 +31,7 @@ export async function sessionRoutes(fastify: FastifyInstance) {
 
     // Get QR or Status
     fastify.get<{ Params: { id: string } }>('/sessions/:id', async (request) => {
-        const status = manager.getSessionStatus(request.params.id);
-        return { status }; // In real app, return QR code string too
+        const { status, qr } = manager.getSessionStatus(request.params.id);
+        return { status, qr };
     });
 }

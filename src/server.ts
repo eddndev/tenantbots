@@ -20,6 +20,17 @@ const server = Fastify({
     },
 });
 
+// Security Middleware
+server.addHook('onRequest', async (request, reply) => {
+    const apiKey = process.env.API_KEY;
+    if (!apiKey) return; // Open if no key configured (dev mode)
+
+    const providedKey = request.headers['x-api-key'];
+    if (providedKey !== apiKey) {
+        reply.code(401).send({ error: 'Unauthorized: Invalid API Key' });
+    }
+});
+
 // Register Routes
 server.register(sessionRoutes);
 
