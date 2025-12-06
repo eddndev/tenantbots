@@ -39,6 +39,9 @@ RUN apk add --no-cache openssl
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/prisma ./prisma
 
+# Generate Prisma Client for Production
+RUN npx prisma generate
+
 # Copy built frontend
 COPY --from=builder /app/client/dist ./client/dist
 
