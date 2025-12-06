@@ -16,21 +16,7 @@ const server = Fastify({
                 translateTime: 'HH:MM:ss Z',
                 ignore: 'pid,hostname',
             },
-        },
-    },
-});
-
-// Register Static Files (Frontend)
-server.register(fastifyStatic, {
-    root: path.join(__dirname, '../../client/dist'),
-    prefix: '/', // optional: default '/'
-});
-
-server.register(sessionRoutes);
-
-server.get('/api/health', async (request, reply) => {
-    return { status: 'ok', uptime: process.uptime() };
-});
+        });
 
 const start = async () => {
     try {
