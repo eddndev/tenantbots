@@ -1,7 +1,5 @@
 import { WhatsAppService } from './whatsapp';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import prisma from './db';
 
 export class SessionManager {
     private sessions: Map<string, WhatsAppService> = new Map();

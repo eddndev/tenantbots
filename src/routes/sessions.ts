@@ -1,8 +1,7 @@
 import { FastifyInstance } from 'fastify';
-import { PrismaClient } from '@prisma/client';
+import prisma from '../db';
 import { SessionManager } from '../sessionManager';
 
-const prisma = new PrismaClient();
 const manager = new SessionManager();
 
 export async function sessionRoutes(fastify: FastifyInstance) {
