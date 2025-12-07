@@ -72,19 +72,42 @@ export class WhatsAppService {
                         if (text.toLowerCase().trim() === 'debug') {
                             const jid = msg.key.remoteJid!;
 
-                            // 1. Mensaje inmediato
+                            // Acknowledge receipt (optional, but good UX)
+                            await this.sock!.readMessages([msg.key]);
+
+                            // 1. Initial Delay: 30 seconds
+                            // Simulate "thinking" or inactivity, then typing
+                            await new Promise(r => setTimeout(r, 25000)); // Wait 25s entirely idle
+
+                            // Start typing for 5 seconds
+                            await this.sock?.sendPresenceUpdate('composing', jid);
+                            await new Promise(r => setTimeout(r, 5000));
+
+                            // Send First Message
                             await this.sock?.sendMessage(jid, {
                                 text: 'Este es un mensaje de prueba de la API 🤖'
                             });
+                            // Stop typing (sendMessage auto-stops usually, but explicit is safer)
+                            await this.sock?.sendPresenceUpdate('paused', jid);
 
-                            // 2. Delay y segundo mensaje
+                            // 2. Second Message Logic
+                            // Wait 2 seconds
                             await new Promise(r => setTimeout(r, 2000));
+                            // Type for 1 second
+                            await this.sock?.sendPresenceUpdate('composing', jid);
+                            await new Promise(r => setTimeout(r, 1000));
+
                             await this.sock?.sendMessage(jid, {
                                 text: 'Este es el segundo mensaje en lista tras haber escuchado debug ⏱️'
                             });
 
-                            // 3. Delay y frase final
+                            // 3. Third Message Logic
+                            // Wait 2 seconds
                             await new Promise(r => setTimeout(r, 2000));
+                            // Type for 1 second
+                            await this.sock?.sendPresenceUpdate('composing', jid);
+                            await new Promise(r => setTimeout(r, 1000));
+
                             await this.sock?.sendMessage(jid, {
                                 text: 'El código es poesía, y los bugs son solo rimas no deseadas. 📜✨'
                             });

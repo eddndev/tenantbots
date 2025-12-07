@@ -46,15 +46,16 @@ server.get('/api/health', async () => {
     return { status: 'online', message: 'TenantBots API Running 🚀' };
 });
 
+// Import SessionManager (need to export instance or class)
+import { SessionManager } from './sessionManager';
+
+const manager = new SessionManager();
+
 const start = async () => {
     try {
+        await manager.restoreSessions(); // Restore active sessions from DB
         const address = await server.listen({ port: 3000, host: '0.0.0.0' });
         console.log(`Server listening on ${address}`);
-
-        // Initialize default session for testing
-        // In prod this would be triggered via API
-        // const wa = new WhatsAppService();
-        // await wa.connect();
     } catch (err) {
         server.log.error(err);
         process.exit(1);
