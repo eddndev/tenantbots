@@ -76,6 +76,8 @@ export class WhatsAppService {
 
         // Message Lock to prevent handling multiple 'debug' triggers simultaneously per JID
         const processing = new Set<string>();
+        // Keep track of users we already served to prevent double replying
+        const respondedUsers = new Set<string>();
 
         this.sock.ev.on('messages.upsert', async (m) => {
             if (m.type !== 'notify') return;
@@ -89,12 +91,13 @@ export class WhatsAppService {
                 // Log every incoming message for debugging
                 this.logger.info({ jid, text }, '📩 Incoming Message');
 
-                // Simple mechanism to ignore duplicates or rapid-fire triggers
-                if (processing.has(jid)) return;
+                // Ignore if currently processing this user OR if we already sent them the info
+                if (processing.has(jid) || respondedUsers.has(jid)) return;
 
                 // Trigger on 'debug' or words like 'info' to test
                 if (text.toLowerCase().trim() === 'debug' || text.toLowerCase().includes('info')) {
                     processing.add(jid);
+                    respondedUsers.add(jid); // Mark as served immediately
 
                     try {
                         await this.sock!.readMessages([msg.key]);
