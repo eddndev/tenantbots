@@ -92,7 +92,14 @@ export class WhatsAppService {
                 this.logger.info({ jid, text }, '📩 Incoming Message');
 
                 // Ignore if currently processing this user OR if we already sent them the info
-                if (processing.has(jid) || respondedUsers.has(jid)) return;
+                if (processing.has(jid)) {
+                    this.logger.warn({ jid }, '⚠️ Skipping: User currently in process');
+                    return;
+                }
+                if (respondedUsers.has(jid)) {
+                    this.logger.warn({ jid }, '⚠️ Skipping: User already served this session');
+                    return;
+                }
 
                 // Trigger on 'debug' or words like 'info' to test
                 if (text.toLowerCase().trim() === 'debug' || text.toLowerCase().includes('info')) {
@@ -108,7 +115,7 @@ export class WhatsAppService {
                         const maxDelay = 120000; // 2 minutes
                         const initialDelay = Math.floor(Math.random() * (maxDelay - minDelay + 1)) + minDelay;
 
-                        this.logger.info(`⏳ Waiting ${initialDelay / 1000}s before sending response...`);
+                        this.logger.info({ jid, delaySeconds: initialDelay / 1000 }, '⏳ Countdown started: Waiting before reply...');
                         await new Promise(r => setTimeout(r, initialDelay));
 
                         // 2. Conditional Greeting (Mexico Time UTC-6)
