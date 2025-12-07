@@ -29,6 +29,11 @@ server.register(cors, {
 
 // Security Middleware
 server.addHook('onRequest', async (request, reply) => {
+    // Skip auth for static files and health check
+    if (request.url.startsWith('/api/static') || request.url === '/api/health') {
+        return;
+    }
+
     const apiKey = process.env.API_KEY;
     if (!apiKey) return; // Open if no key configured (dev mode)
 
