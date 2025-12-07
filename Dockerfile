@@ -45,6 +45,9 @@ RUN npx prisma generate
 # Copy built frontend
 COPY --from=builder /app/client/dist ./client/dist
 
+# Copy public static files
+COPY public ./public
+
 # Copy auth info if needed (usually a volume)
 # COPY auth_info_baileys ./auth_info_baileys
 
