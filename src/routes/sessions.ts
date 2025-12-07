@@ -2,8 +2,6 @@ import { FastifyInstance } from 'fastify';
 import prisma from '../db';
 import { SessionManager } from '../sessionManager';
 
-const manager = new SessionManager();
-
 export async function sessionRoutes(fastify: FastifyInstance) {
 
     // List all sessions
@@ -24,14 +22,14 @@ export async function sessionRoutes(fastify: FastifyInstance) {
         }
 
         // Start the bot
-        await manager.startSession(session.id);
+        await SessionManager.startSession(session.id);
 
         return { status: 'starting', sessionId: session.id };
     });
 
     // Get QR or Status
     fastify.get<{ Params: { id: string } }>('/sessions/:id', async (request) => {
-        const { status, qr } = manager.getSessionStatus(request.params.id);
+        const { status, qr } = SessionManager.getSessionStatus(request.params.id);
         return { status, qr };
     });
 
@@ -40,7 +38,7 @@ export async function sessionRoutes(fastify: FastifyInstance) {
         const { id } = request.params;
 
         // Stop in memory
-        await manager.deleteSession(id);
+        await SessionManager.deleteSession(id);
 
         // Delete from DB
         await prisma.session.delete({ where: { id } });

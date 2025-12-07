@@ -38,6 +38,12 @@ server.addHook('onRequest', async (request, reply) => {
     }
 });
 
+// Serve Static Files (Images, QR codes, etc.)
+server.register(fastifyStatic, {
+    root: path.join(__dirname, '../public'),
+    prefix: '/api/static/', // Access via http://host/api/static/image.jpg
+});
+
 // Register Routes
 server.register(sessionRoutes, { prefix: '/api' });
 
@@ -46,16 +52,18 @@ server.get('/api/health', async () => {
     return { status: 'online', message: 'TenantBots API Running 🚀' };
 });
 
-// Import SessionManager (need to export instance or class)
-import { SessionManager } from './sessionManager';
-
-const manager = new SessionManager();
-
 const start = async () => {
     try {
-        await manager.restoreSessions(); // Restore active sessions from DB
+        // Register static files BEFORE listening (Best practice, though fastify allows valid async flow)
+
+        // Restore Sessions
+        const { SessionManager } = await import('./sessionManager');
+        await SessionManager.restoreSessions();
+
         const address = await server.listen({ port: 3000, host: '0.0.0.0' });
         console.log(`Server listening on ${address}`);
+        console.log(`Static files being served from ${path.join(__dirname, '../public')}`);
+
     } catch (err) {
         server.log.error(err);
         process.exit(1);

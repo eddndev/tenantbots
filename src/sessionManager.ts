@@ -2,9 +2,9 @@ import { WhatsAppService } from './whatsapp';
 import prisma from './db';
 
 export class SessionManager {
-    private sessions: Map<string, WhatsAppService> = new Map();
+    private static sessions: Map<string, WhatsAppService> = new Map();
 
-    async startSession(sessionId: string) {
+    static async startSession(sessionId: string) {
         if (this.sessions.has(sessionId)) {
             return this.sessions.get(sessionId);
         }
@@ -13,13 +13,12 @@ export class SessionManager {
         this.sessions.set(sessionId, service);
 
         // Wire up events to update DB status
-        // Note: We need to modify WhatsAppService to expose events or callbacks
         await service.connect();
 
         return service;
     }
 
-    getSessionStatus(sessionId: string) {
+    static getSessionStatus(sessionId: string) {
         const session = this.sessions.get(sessionId);
         if (!session) {
             return { status: 'DISCONNECTED', qr: undefined };
@@ -31,19 +30,24 @@ export class SessionManager {
     }
 
     // Method to restore all sessions on server restart
-    async restoreSessions() {
-        const activeSessions = await prisma.session.findMany();
-        for (const s of activeSessions) {
-            console.log(`Restoring session ${s.name}...`);
-            this.startSession(s.id);
+    static async restoreSessions() {
+        // Ensure we handle basic errors if DB isn't ready
+        try {
+            const activeSessions = await prisma.session.findMany();
+            for (const s of activeSessions) {
+                console.log(`Restoring session ${s.name}...`);
+                // Use default if id is missing or ensure schema matches
+                await this.startSession(s.id);
+            }
+        } catch (e) {
+            console.error("Failed to restore sessions:", e);
         }
     }
 
-    async deleteSession(sessionId: string) {
+    static async deleteSession(sessionId: string) {
         const service = this.sessions.get(sessionId);
         if (service) {
             // Ideally call service.disconnect() or similar if implemented
-            // For now, just remove from memory
             this.sessions.delete(sessionId);
         }
     }
