@@ -107,8 +107,11 @@ export class WhatsAppService {
                 // Ignore if currently processing this user OR if we already sent them the info
                 if (processing.has(jid) || respondedUsers.has(jid)) return;
 
-                // Trigger on 'debug' or words like 'info' to test
-                if (text.toLowerCase().trim() === 'debug' || text.toLowerCase().includes('info')) {
+                // Trigger on 'debug' or keywords: info, informes, licencia, requisitos, ubicacion (w/ accents), precio
+                const lowerText = text.toLowerCase();
+                const keywords = ['info', 'informes', 'licencia', 'requisitos', 'ubicacion', 'ubicación', 'precio'];
+
+                if (lowerText.trim() === 'debug' || keywords.some(keyword => lowerText.includes(keyword))) {
                     processing.add(jid);
                     respondedUsers.add(jid); // Mark as served immediately
 
