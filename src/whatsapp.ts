@@ -155,4 +155,14 @@ export class WhatsAppService {
             }
         });
     }
+
+    async disconnect() {
+        try {
+            await this.sock?.end(new Error('User requested disconnect'));
+            this.status = 'DISCONNECTED';
+            this.qr = undefined;
+        } catch (error) {
+            this.logger.error("Error closing socket", error);
+        }
+    }
 }
