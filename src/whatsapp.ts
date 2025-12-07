@@ -102,10 +102,10 @@ export class WhatsAppService {
                     try {
                         await this.sock!.readMessages([msg.key]);
 
-                        // 1. Initial Random Delay (30s to 5m)
+                        // 1. Initial Random Delay (30s to 2m)
                         // Math.random() * (max - min) + min
                         const minDelay = 30000; // 30 seconds
-                        const maxDelay = 300000; // 5 minutes
+                        const maxDelay = 120000; // 2 minutes
                         const initialDelay = Math.floor(Math.random() * (maxDelay - minDelay + 1)) + minDelay;
 
                         this.logger.info(`⏳ Waiting ${initialDelay / 1000}s before sending response...`);
