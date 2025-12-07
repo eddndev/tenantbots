@@ -85,21 +85,27 @@ export class WhatsAppService {
             for (const msg of m.messages) {
                 if (msg.key.fromMe) continue;
 
-                const text = msg.message?.conversation || msg.message?.extendedTextMessage?.text || '';
+                // Extract text from various message types (including ephemeral/disappearing messages)
+                let text =
+                    msg.message?.conversation ||
+                    msg.message?.extendedTextMessage?.text ||
+                    msg.message?.imageMessage?.caption ||
+                    msg.message?.videoMessage?.caption ||
+                    '';
+
+                // Handle Ephemeral Messages (Disappearing mode)
+                if (!text && msg.message?.ephemeralMessage?.message) {
+                    const m = msg.message.ephemeralMessage.message;
+                    text = m.conversation || m.extendedTextMessage?.text || m.imageMessage?.caption || '';
+                }
+
                 const jid = msg.key.remoteJid!;
 
                 // Log every incoming message for debugging
                 this.logger.info({ jid, text }, '📩 Incoming Message');
 
                 // Ignore if currently processing this user OR if we already sent them the info
-                if (processing.has(jid)) {
-                    this.logger.warn({ jid }, '⚠️ Skipping: User currently in process');
-                    return;
-                }
-                if (respondedUsers.has(jid)) {
-                    this.logger.warn({ jid }, '⚠️ Skipping: User already served this session');
-                    return;
-                }
+                if (processing.has(jid) || respondedUsers.has(jid)) return;
 
                 // Trigger on 'debug' or words like 'info' to test
                 if (text.toLowerCase().trim() === 'debug' || text.toLowerCase().includes('info')) {
@@ -115,7 +121,7 @@ export class WhatsAppService {
                         const maxDelay = 120000; // 2 minutes
                         const initialDelay = Math.floor(Math.random() * (maxDelay - minDelay + 1)) + minDelay;
 
-                        this.logger.info({ jid, delaySeconds: initialDelay / 1000 }, '⏳ Countdown started: Waiting before reply...');
+                        this.logger.info(`⏳ Waiting ${initialDelay / 1000}s before sending response...`);
                         await new Promise(r => setTimeout(r, initialDelay));
 
                         // 2. Conditional Greeting (Mexico Time UTC-6)
