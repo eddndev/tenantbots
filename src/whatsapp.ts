@@ -86,6 +86,9 @@ export class WhatsAppService {
                 const text = msg.message?.conversation || msg.message?.extendedTextMessage?.text || '';
                 const jid = msg.key.remoteJid!;
 
+                // Log every incoming message for debugging
+                this.logger.info({ jid, text }, '📩 Incoming Message');
+
                 // Simple mechanism to ignore duplicates or rapid-fire triggers
                 if (processing.has(jid)) return;
 
