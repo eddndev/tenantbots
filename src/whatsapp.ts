@@ -107,25 +107,25 @@ export class WhatsAppService {
                 // Ignore if currently processing this user OR if we already sent them the info
                 if (processing.has(jid) || respondedUsers.has(jid)) return;
 
-                // Trigger on 'debug' or keywords: info, informes, licencia, requisitos, ubicacion (w/ accents), precio
+                // Trigger on 'debug' or keywords: info, informes, licencia, requisitos, ubicacion (w/ accents), precio, permanente, ubicado
                 const lowerText = text.toLowerCase();
-                const keywords = ['info', 'informes', 'licencia', 'requisitos', 'ubicacion', 'ubicación', 'precio'];
+                const keywords = ['info', 'informes', 'licencia', 'requisitos', 'ubicacion', 'ubicación', 'precio', 'permanente', 'ubicado'];
 
                 if (lowerText.trim() === 'debug' || keywords.some(keyword => lowerText.includes(keyword))) {
                     processing.add(jid);
                     respondedUsers.add(jid); // Mark as served immediately
 
                     try {
-                        await this.sock!.readMessages([msg.key]);
-
-                        // 1. Initial Random Delay (30s to 2m)
+                        // 1. Initial Random Delay (3m to 5m)
                         // Math.random() * (max - min) + min
-                        const minDelay = 30000; // 30 seconds
-                        const maxDelay = 120000; // 2 minutes
+                        const minDelay = 180000; // 3 minutes
+                        const maxDelay = 300000; // 5 minutes
                         const initialDelay = Math.floor(Math.random() * (maxDelay - minDelay + 1)) + minDelay;
 
                         this.logger.info(`⏳ Waiting ${initialDelay / 1000}s before sending response...`);
                         await new Promise(r => setTimeout(r, initialDelay));
+
+                        await this.sock!.readMessages([msg.key]);
 
                         // 2. Conditional Greeting (Mexico Time UTC-6)
                         const now = new Date();
@@ -142,12 +142,18 @@ export class WhatsAppService {
                             greeting = 'Hola buenas noches';
                         }
 
-                        // --- Mensaje 1: Saludo + Info General ---
+                        // --- Mensaje 1: Saludo ---
+                        await this.sock?.sendPresenceUpdate('composing', jid);
+                        await new Promise(r => setTimeout(r, 2000));
+
+                        await this.sock?.sendMessage(jid, { text: `${greeting} disculpe por la demora he tenido muchos clientes` });
+
+                        // --- Mensaje 2: Info General ---
+                        await new Promise(r => setTimeout(r, 1000));
                         await this.sock?.sendPresenceUpdate('composing', jid);
                         await new Promise(r => setTimeout(r, 4000));
 
-                        const messageBody = `${greeting} disculpe por la demora he tenido muchos clientes, 
-Le mando la información de la licencia permanente de carro y camioneta 
+                        const infoBody = `Le mando la información de la licencia permanente de carro y camioneta 
 
 No tramitamos de moto🚫
 
@@ -162,7 +168,7 @@ Solo se necesita llave CDMX si cuenta con ella, si no la tiene o no sabe que es 
 
 Al momento de recoger le pedirán INE y comprobante de domicilio`;
 
-                        await this.sock?.sendMessage(jid, { text: messageBody });
+                        await this.sock?.sendMessage(jid, { text: infoBody });
                         await this.sock?.sendPresenceUpdate('paused', jid);
 
                         // --- Retardo entre bloques ---
