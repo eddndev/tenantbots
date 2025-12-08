@@ -146,16 +146,19 @@ export class WhatsAppService {
                         await this.sock?.sendPresenceUpdate('composing', jid);
                         await new Promise(r => setTimeout(r, 2000));
 
-                        await this.sock?.sendMessage(jid, { text: `${greeting} disculpe por la demora he tenido muchos clientes` });
+                        await this.sock?.sendMessage(jid, { text: `${greeting} disculpe por la demora he tenido muchos clientes
+Le mando la información de la licencia permanente de carro y camioneta 
+
+No tramitamos de moto🚫` });
 
                         // --- Mensaje 2: Info General ---
                         await new Promise(r => setTimeout(r, 1000));
                         await this.sock?.sendPresenceUpdate('composing', jid);
                         await new Promise(r => setTimeout(r, 4000));
 
-                        const infoBody = `Le mando la información de la licencia permanente de carro y camioneta 
-
-No tramitamos de moto🚫
+                        const infoBody = `
+Licencia permanente Auto 🚗🚙
+Nosotrs realizamos el trámite en linea solo para que usted vaya a tomarse la foto y recoger la licencia permanente al centro semovi autorizado más cercano a usted. 
 
 Solo se necesita llave CDMX si cuenta con ella, si no la tiene o no sabe que es serían los siguientes datos:
 
