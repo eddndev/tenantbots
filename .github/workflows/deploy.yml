@@ -76,6 +76,12 @@ jobs:
           
           # Restart services
           docker compose up -d --remove-orphans
+
+          # Wait for app to be ready (optional but good practice, though exec might wait)
+          sleep 10
+          
+          # HARD RESET DATABASE (Wipes data and seeds)
+          docker compose exec -T app npx prisma migrate reset --force
           
           # Cleanup unused images
           docker image prune -f
