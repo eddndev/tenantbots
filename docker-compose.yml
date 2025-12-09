@@ -13,7 +13,7 @@ services:
       - API_KEY=${API_KEY}
     volumes:
       - ./auth_info_baileys:/app/auth_info_baileys
-    command: sh -c "npx prisma db push && node dist/server.js"
+    command: sh -c "npx prisma migrate deploy && node dist/server.js"
     depends_on:
       db:
         condition: service_healthy
