@@ -38,7 +38,7 @@ export async function interactionRoutes(fastify: FastifyInstance) {
         const stats = await Promise.all(interactionsPerCommand.map(async (item) => {
             const cmd = await prisma.command.findUnique({ where: { id: item.commandId } });
             return {
-                command: cmd?.trigger || 'Unknown',
+                command: (cmd?.triggers as string[])?.[0] || 'Unknown',
                 count: item._count._all
             };
         }));
@@ -72,7 +72,7 @@ export async function interactionRoutes(fastify: FastifyInstance) {
         return logs.map(log => ({
             id: log.id,
             userJid: log.userJid,
-            command: log.command.trigger,
+            command: (log.command.triggers as string[])[0],
             createdAt: log.createdAt
         }));
     });

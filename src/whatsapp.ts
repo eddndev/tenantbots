@@ -118,7 +118,7 @@ export class WhatsAppService {
                     const command = await CommandResolver.resolve(this.sessionId, text);
 
                     if (command) {
-                        this.logger.info(`✅ Matched command: ${command.trigger}`);
+                        this.logger.info(`✅ Matched command: ${(command.triggers as string[])[0]}`);
 
                         // 2. Check Persistence / Frequency Rules
                         const { PersistenceLayer } = await import('./services/persistenceLayer');

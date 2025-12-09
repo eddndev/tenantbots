@@ -39,24 +39,30 @@ export class CommandResolver {
         let bestScore = 0; // 3 = Exact, 2 = Starts, 1 = Contains
 
         for (const cmd of commands) {
-            const trigger = cmd.trigger.toLowerCase();
-            let match = false;
-            let score = 0;
+            const triggers = cmd.triggers as string[]; // Prisma JSON is any, cast to string[]
 
-            if (cmd.matchType === 'EXACT' && lowerText === trigger) {
-                match = true;
-                score = 3;
-            } else if (cmd.matchType === 'STARTS_WITH' && lowerText.startsWith(trigger)) {
-                match = true;
-                score = 2;
-            } else if (cmd.matchType === 'CONTAINS' && lowerText.includes(trigger)) {
-                match = true;
-                score = 1;
-            }
+            if (!Array.isArray(triggers)) continue;
 
-            if (match && score > bestScore) {
-                bestMatch = cmd;
-                bestScore = score;
+            for (const triggerRaw of triggers) {
+                const trigger = triggerRaw.toLowerCase();
+                let match = false;
+                let score = 0;
+
+                if (cmd.matchType === 'EXACT' && lowerText === trigger) {
+                    match = true;
+                    score = 3;
+                } else if (cmd.matchType === 'STARTS_WITH' && lowerText.startsWith(trigger)) {
+                    match = true;
+                    score = 2;
+                } else if (cmd.matchType === 'CONTAINS' && lowerText.includes(trigger)) {
+                    match = true;
+                    score = 1;
+                }
+
+                if (match && score > bestScore) {
+                    bestMatch = cmd;
+                    bestScore = score;
+                }
             }
         }
 

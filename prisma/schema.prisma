@@ -24,7 +24,7 @@ model Command {
   id          String   @id @default(uuid())
   sessionId   String
   session     Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  trigger     String   // The keyword or phrase
+  triggers    Json     @default("[]") // Array of strings: ["hola", "buenos dias"]
   matchType   String   @default("CONTAINS") // EXACT, CONTAINS, STARTS_WITH
   
   isEnabled   Boolean  @default(true)

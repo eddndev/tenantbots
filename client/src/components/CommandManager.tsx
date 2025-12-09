@@ -4,7 +4,7 @@ import { Plus, Trash2, Edit2, Save, X } from 'lucide-react';
 
 interface Command {
     id: string;
-    trigger: string;
+    triggers: string[];
     matchType: string;
     frequency: string;
     steps: any[];
@@ -33,7 +33,7 @@ export const CommandManager = ({ sessionId, apiKey }: { sessionId: string, apiKe
     };
 
     const handleDelete = async (id: string) => {
-        if (!confirm('Eliminar comando?')) return;
+        if (!confirm('¿Eliminar comando?')) return;
         await api.delete(`/commands/${id}`, apiKey);
         fetchCommands();
     };
@@ -67,7 +67,7 @@ export const CommandManager = ({ sessionId, apiKey }: { sessionId: string, apiKe
             <div className="flex justify-between items-center mb-6">
                 <h2 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-purple-400">Comandos del Bot</h2>
                 <button
-                    onClick={() => { setIsNew(true); setEditingCmd({ id: '', trigger: '', matchType: 'CONTAINS', frequency: 'ALWAYS', steps: [] }); }}
+                    onClick={() => { setIsNew(true); setEditingCmd({ id: '', triggers: [], matchType: 'CONTAINS', frequency: 'ALWAYS', steps: [] }); }}
                     className="bg-brand text-white px-3 py-1.5 rounded flex items-center gap-2 text-sm"
                 >
                     <Plus size={16} /> Nuevo Comando
@@ -78,7 +78,7 @@ export const CommandManager = ({ sessionId, apiKey }: { sessionId: string, apiKe
                 {commands.map(cmd => (
                     <div key={cmd.id} className="border p-4 rounded-lg flex justify-between items-center hover:bg-slate-50">
                         <div>
-                            <div className="font-bold text-slate-800">{cmd.trigger}</div>
+                            <div className="font-bold text-slate-800">{(cmd.triggers || []).join(', ')}</div>
                             <div className="text-xs text-slate-500 mt-1 flex gap-2">
                                 <span className="bg-slate-200 px-1.5 py-0.5 rounded">{cmd.matchType}</span>
                                 <span className="bg-slate-200 px-1.5 py-0.5 rounded">{cmd.frequency}</span>
@@ -98,6 +98,13 @@ export const CommandManager = ({ sessionId, apiKey }: { sessionId: string, apiKe
 
 const CommandEditor = ({ command, onSave, onCancel }: any) => {
     const [formData, setFormData] = useState({ ...command });
+    const [triggersInput, setTriggersInput] = useState((command.triggers || []).join(', '));
+
+    const handleSaveInternal = () => {
+        // Parse triggers
+        const triggersArray = triggersInput.split(',').map((t: string) => t.trim()).filter((t: string) => t.length > 0);
+        onSave({ ...formData, triggers: triggersArray });
+    };
 
     const addStep = (type: string) => {
         setFormData({
@@ -124,24 +131,29 @@ const CommandEditor = ({ command, onSave, onCancel }: any) => {
                 <button onClick={onCancel}><X size={20} /></button>
             </div>
 
-            <div className="grid grid-cols-2 gap-4 mb-4">
-                <div>
-                    <label className="block text-xs text-slate-500">Trigger</label>
-                    <input className="w-full border rounded p-2" value={formData.trigger} onChange={e => setFormData({ ...formData, trigger: e.target.value })} />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div className="md:col-span-2">
+                    <label className="block text-xs text-slate-500">Palabras clave (separadas por coma)</label>
+                    <input
+                        className="w-full border rounded p-2"
+                        value={triggersInput}
+                        onChange={e => setTriggersInput(e.target.value)}
+                        placeholder="ej. info, precio, costo"
+                    />
                 </div>
                 <div>
-                    <label className="block text-xs text-slate-500">Match Type</label>
+                    <label className="block text-xs text-slate-500">Tipo de Coincidencia</label>
                     <select className="w-full border rounded p-2" value={formData.matchType} onChange={e => setFormData({ ...formData, matchType: e.target.value })}>
-                        <option value="CONTAINS">Contiene</option>
+                        <option value="CONTAINS">Contiene (Cualquiera de las palabras)</option>
                         <option value="EXACT">Exacto</option>
                         <option value="STARTS_WITH">Empieza con</option>
                     </select>
                 </div>
                 <div>
-                    <label className="block text-xs text-slate-500">Frequency</label>
+                    <label className="block text-xs text-slate-500">Frecuencia</label>
                     <select className="w-full border rounded p-2" value={formData.frequency} onChange={e => setFormData({ ...formData, frequency: e.target.value })}>
-                        <option value="ALWAYS">Siempre</option>
-                        <option value="ONCE">Una vez por usuario</option>
+                        <option value="ALWAYS">Siempre responder</option>
+                        <option value="ONCE">Solo una vez por usuario</option>
                     </select>
                 </div>
             </div>
@@ -164,7 +176,50 @@ const CommandEditor = ({ command, onSave, onCancel }: any) => {
                                 {step.type === 'DELAY' ? (
                                     <input type="number" placeholder="MS (ej. 1000)" className="w-full border rounded p-1 text-sm" value={step.content} onChange={(e) => updateStep(i, 'content', e.target.value)} />
                                 ) : (
-                                    <textarea placeholder={step.type === 'TEXT' ? 'Mensaje...' : 'URL...'} className="w-full border rounded p-1 text-sm" rows={2} value={step.content} onChange={(e) => updateStep(i, 'content', e.target.value)} />
+                                    <div className="space-y-2">
+                                        <textarea placeholder={step.type === 'TEXT' ? 'Mensaje por defecto...' : 'URL...'} className="w-full border rounded p-1 text-sm" rows={2} value={step.content} onChange={(e) => updateStep(i, 'content', e.target.value)} />
+
+                                        {step.type === 'TEXT' && (
+                                            <div className="bg-slate-100 p-2 rounded">
+                                                <div className="text-xs font-semibold mb-1 text-slate-600">Condiciones de Horario (Hora México 0-23)</div>
+                                                {(step.options?.timeVariants || []).map((v: any, vIndex: number) => (
+                                                    <div key={vIndex} className="flex gap-2 mb-2 items-start">
+                                                        <div className="flex flex-col gap-1 w-20 shrink-0">
+                                                            <input type="number" placeholder="In" className="border rounded p-1 text-xs" value={v.startHour} onChange={e => {
+                                                                const newVariants = [...(step.options?.timeVariants || [])];
+                                                                newVariants[vIndex].startHour = e.target.value;
+                                                                updateStep(i, 'options', { ...step.options, timeVariants: newVariants });
+                                                            }} />
+                                                            <input type="number" placeholder="Fin" className="border rounded p-1 text-xs" value={v.endHour} onChange={e => {
+                                                                const newVariants = [...(step.options?.timeVariants || [])];
+                                                                newVariants[vIndex].endHour = e.target.value;
+                                                                updateStep(i, 'options', { ...step.options, timeVariants: newVariants });
+                                                            }} />
+                                                        </div>
+                                                        <textarea
+                                                            placeholder="Mensaje condicional..."
+                                                            className="flex-1 border rounded p-1 text-xs"
+                                                            rows={2}
+                                                            value={v.content}
+                                                            onChange={e => {
+                                                                const newVariants = [...(step.options?.timeVariants || [])];
+                                                                newVariants[vIndex].content = e.target.value;
+                                                                updateStep(i, 'options', { ...step.options, timeVariants: newVariants });
+                                                            }}
+                                                        />
+                                                        <button onClick={() => {
+                                                            const newVariants = (step.options?.timeVariants || []).filter((_: any, idx: number) => idx !== vIndex);
+                                                            updateStep(i, 'options', { ...step.options, timeVariants: newVariants });
+                                                        }} className="text-red-400"><X size={12} /></button>
+                                                    </div>
+                                                ))}
+                                                <button onClick={() => {
+                                                    const newVariants = [...(step.options?.timeVariants || []), { startHour: 9, endHour: 18, content: '' }];
+                                                    updateStep(i, 'options', { ...step.options, timeVariants: newVariants });
+                                                }} className="text-xs text-blue-500 hover:underline">+ Agregar Variante de Horario</button>
+                                            </div>
+                                        )}
+                                    </div>
                                 )}
                             </div>
                             <button onClick={() => removeStep(i)} className="text-red-400 hover:text-red-600"><Trash2 size={14} /></button>
@@ -175,7 +230,7 @@ const CommandEditor = ({ command, onSave, onCancel }: any) => {
 
             <div className="flex justify-end gap-2">
                 <button onClick={onCancel} className="px-4 py-2 text-slate-600">Cancelar</button>
-                <button onClick={() => onSave(formData)} className="px-4 py-2 bg-brand text-white rounded flex items-center gap-2"><Save size={16} /> Guardar</button>
+                <button onClick={() => handleSaveInternal()} className="px-4 py-2 bg-brand text-white rounded flex items-center gap-2"><Save size={16} /> Guardar</button>
             </div>
         </div>
     );

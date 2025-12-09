@@ -27,13 +27,13 @@ export async function commandRoutes(fastify: FastifyInstance) {
     // Create Command
     fastify.post('/sessions/:sessionId/commands', async (request, reply) => {
         const { sessionId } = request.params as { sessionId: string };
-        const { trigger, matchType, frequency, isEnabled, steps } = request.body as any;
+        const { triggers, matchType, frequency, isEnabled, steps } = request.body as any;
 
         try {
             const command = await prisma.command.create({
                 data: {
                     sessionId,
-                    trigger,
+                    triggers: triggers || [], // Expecting array
                     matchType,
                     frequency,
                     isEnabled,
@@ -58,7 +58,7 @@ export async function commandRoutes(fastify: FastifyInstance) {
     // Update Command
     fastify.put('/commands/:id', async (request, reply) => {
         const { id } = request.params as { id: string };
-        const { trigger, matchType, frequency, isEnabled, steps } = request.body as any;
+        const { triggers, matchType, frequency, isEnabled, steps } = request.body as any;
 
         try {
             // Transaction: Update command fields + Replace steps
@@ -66,7 +66,7 @@ export async function commandRoutes(fastify: FastifyInstance) {
                 // 1. Update basic fields
                 const cmd = await tx.command.update({
                     where: { id },
-                    data: { trigger, matchType, frequency, isEnabled }
+                    data: { triggers, matchType, frequency, isEnabled }
                 });
 
                 // 2. Delete old steps (if steps provided)

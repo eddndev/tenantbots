@@ -26,6 +26,31 @@ export class ResponseHandler {
                     break;
 
                 case 'TEXT':
+                    let content = step.content;
+                    const variants = (step.options as any)?.timeVariants;
+
+                    if (Array.isArray(variants)) {
+                        const now = new Date();
+                        const utcHour = now.getUTCHours();
+                        const mexicoHour = (utcHour - 6 + 24) % 24; // Mexico City is UTC-6 (Standard Time)
+
+                        // Find matching variant
+                        const match = variants.find((v: any) => {
+                            const start = parseInt(v.startHour);
+                            const end = parseInt(v.endHour);
+                            // Handle wrapping ranges (e.g. 22 to 5)
+                            if (start <= end) {
+                                return mexicoHour >= start && mexicoHour <= end;
+                            } else {
+                                return mexicoHour >= start || mexicoHour <= end;
+                            }
+                        });
+
+                        if (match) {
+                            content = match.content;
+                        }
+                    }
+
                     // Send presence 'composing' briefly before text if not manual delay?
                     // Let's mimic human behavior:
                     // 1. Presence 'composing'
@@ -41,11 +66,11 @@ export class ResponseHandler {
                     if (simulateTyping) {
                         await sock.sendPresenceUpdate('composing', jid);
                         // A small delay to show "typing..." on user phone
-                        const typingMs = Math.min(2000, step.content.length * 50); // very rough heuristic
+                        const typingMs = Math.min(2000, content.length * 50); // very rough heuristic
                         await new Promise(r => setTimeout(r, typingMs));
                     }
 
-                    await sock.sendMessage(jid, { text: step.content });
+                    await sock.sendMessage(jid, { text: content });
 
                     if (simulateTyping) {
                         await sock.sendPresenceUpdate('paused', jid);
