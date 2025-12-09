@@ -107,4 +107,62 @@ export async function commandRoutes(fastify: FastifyInstance) {
         await prisma.command.delete({ where: { id } });
         return { success: true };
     });
+
+    // Import Commands from another Session
+    fastify.post('/sessions/:sessionId/import', async (request, reply) => {
+        const { sessionId } = request.params as { sessionId: string };
+        const { sourceSessionId } = request.body as { sourceSessionId: string };
+
+        if (!sourceSessionId) {
+            return reply.code(400).send({ error: 'Source Session ID is required' });
+        }
+
+        if (sessionId === sourceSessionId) {
+            return reply.code(400).send({ error: 'Cannot import from the same session' });
+        }
+
+        try {
+            // 1. Fetch source commands
+            const sourceCommands = await prisma.command.findMany({
+                where: { sessionId: sourceSessionId },
+                include: { steps: { orderBy: { order: 'asc' } } }
+            });
+
+            if (sourceCommands.length === 0) {
+                return { message: 'No commands found in source session', count: 0 };
+            }
+
+            // 2. Clone them to target session
+            const createdCount = await prisma.$transaction(async (tx) => {
+                let count = 0;
+                for (const cmd of sourceCommands) {
+                    await tx.command.create({
+                        data: {
+                            sessionId: sessionId,
+                            triggers: cmd.triggers as any,
+                            matchType: cmd.matchType,
+                            frequency: cmd.frequency,
+                            isEnabled: cmd.isEnabled,
+                            steps: {
+                                create: cmd.steps.map(step => ({
+                                    order: step.order,
+                                    type: step.type,
+                                    content: step.content,
+                                    options: step.options as any
+                                }))
+                            }
+                        }
+                    });
+                    count++;
+                }
+                return count;
+            });
+
+            return { success: true, count: createdCount };
+
+        } catch (error) {
+            request.log.error(error);
+            return reply.code(500).send({ error: 'Failed to import commands' });
+        }
+    });
 }

@@ -13,8 +13,13 @@ interface Command {
 export const CommandManager = ({ sessionId, apiKey }: { sessionId: string, apiKey: string }) => {
     const [commands, setCommands] = useState<Command[]>([]);
     const [loading, setLoading] = useState(true);
-    const [editingCmd, setEditingCmd] = useState<Command | null>(null); // If null, list mode. If set, edit mode.
+    const [editingCmd, setEditingCmd] = useState<Command | null>(null);
     const [isNew, setIsNew] = useState(false);
+
+    // Import State
+    const [showImport, setShowImport] = useState(false);
+    const [sessions, setSessions] = useState<any[]>([]);
+    const [selectedSource, setSelectedSource] = useState('');
 
     useEffect(() => {
         fetchCommands();
@@ -29,6 +34,31 @@ export const CommandManager = ({ sessionId, apiKey }: { sessionId: string, apiKe
             console.error(e);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const loadSessions = async () => {
+        try {
+            const data = await api.get('/sessions', apiKey);
+            // Filter out current session
+            setSessions(data.filter((s: any) => s.id !== sessionId));
+            setShowImport(true);
+        } catch (e) {
+            alert('Error cargando sesiones');
+        }
+    };
+
+    const handleImport = async () => {
+        if (!selectedSource) return;
+        if (!confirm('Esto copiará todos los comandos del bot seleccionado. ¿Continuar?')) return;
+
+        try {
+            const res = await api.post(`/sessions/${sessionId}/import`, apiKey, { sourceSessionId: selectedSource });
+            alert(`Importados ${res.count} comandos exitosamente.`);
+            setShowImport(false);
+            fetchCommands();
+        } catch (e) {
+            alert('Error importando configuración');
         }
     };
 
@@ -64,16 +94,45 @@ export const CommandManager = ({ sessionId, apiKey }: { sessionId: string, apiKe
     }
 
     return (
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="bg-white rounded-lg shadow p-6 relative">
             <div className="flex justify-between items-center mb-6">
                 <h2 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-purple-400">Comandos del Bot</h2>
-                <button
-                    onClick={() => { setIsNew(true); setEditingCmd({ id: '', triggers: [], matchType: 'CONTAINS', frequency: 'ALWAYS', steps: [] }); }}
-                    className="bg-brand text-white px-3 py-1.5 rounded flex items-center gap-2 text-sm"
-                >
-                    <Plus size={16} /> Nuevo Comando
-                </button>
+                <div className="flex gap-2">
+                    <button
+                        onClick={loadSessions}
+                        className="bg-slate-100 text-slate-600 px-3 py-1.5 rounded flex items-center gap-2 text-sm hover:bg-slate-200"
+                    >
+                        Importar de otro Bot
+                    </button>
+                    <button
+                        onClick={() => { setIsNew(true); setEditingCmd({ id: '', triggers: [], matchType: 'CONTAINS', frequency: 'ALWAYS', steps: [] }); }}
+                        className="bg-brand text-white px-3 py-1.5 rounded flex items-center gap-2 text-sm"
+                    >
+                        <Plus size={16} /> Nuevo Comando
+                    </button>
+                </div>
             </div>
+
+            {showImport && (
+                <div className="absolute inset-0 bg-white/95 z-10 flex items-center justify-center p-4 rounded-lg">
+                    <div className="bg-white shadow-xl border p-6 rounded-lg w-full max-w-sm">
+                        <h3 className="font-bold mb-4">Importar Configuración</h3>
+                        <p className="text-sm text-slate-500 mb-4">Elige un bot existente para copiar sus comandos.</p>
+
+                        <select className="w-full border rounded p-2 mb-4" value={selectedSource} onChange={e => setSelectedSource(e.target.value)}>
+                            <option value="">Selecciona un bot...</option>
+                            {sessions.map(s => (
+                                <option key={s.id} value={s.id}>{s.name} ({s.phoneNumber})</option>
+                            ))}
+                        </select>
+
+                        <div className="flex justify-end gap-2">
+                            <button onClick={() => setShowImport(false)} className="px-3 py-1 text-slate-500">Cancelar</button>
+                            <button onClick={handleImport} disabled={!selectedSource} className="px-3 py-1 bg-brand text-white rounded">Importar</button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             <div className="space-y-3">
                 {commands.map(cmd => (
@@ -213,6 +272,18 @@ const CommandEditor = ({ command, onSave, onCancel, apiKey }: any) => {
                                                 </div>
                                             )}
                                         </div>
+
+                                        {step.type === 'IMAGE' && (
+                                            <div className="mt-1">
+                                                <input
+                                                    type="text"
+                                                    placeholder="Escribe un pie de foto (caption, opcional)..."
+                                                    className="w-full border rounded p-1 text-xs"
+                                                    value={step.options?.caption || ''}
+                                                    onChange={e => updateStep(i, 'options', { ...step.options, caption: e.target.value })}
+                                                />
+                                            </div>
+                                        )}
 
                                         {step.type === 'TEXT' && (
                                             <div className="bg-slate-100 p-2 rounded">
