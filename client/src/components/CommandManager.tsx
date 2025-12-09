@@ -59,6 +59,7 @@ export const CommandManager = ({ sessionId, apiKey }: { sessionId: string, apiKe
             command={editingCmd}
             onSave={handleSave}
             onCancel={() => setEditingCmd(null)}
+            apiKey={apiKey}
         />;
     }
 
@@ -96,14 +97,37 @@ export const CommandManager = ({ sessionId, apiKey }: { sessionId: string, apiKe
     );
 };
 
-const CommandEditor = ({ command, onSave, onCancel }: any) => {
+const CommandEditor = ({ command, onSave, onCancel, apiKey }: any) => {
     const [formData, setFormData] = useState({ ...command });
     const [triggersInput, setTriggersInput] = useState((command.triggers || []).join(', '));
+    const [uploading, setUploading] = useState<{ [key: number]: boolean }>({});
 
     const handleSaveInternal = () => {
         // Parse triggers
         const triggersArray = triggersInput.split(',').map((t: string) => t.trim()).filter((t: string) => t.length > 0);
         onSave({ ...formData, triggers: triggersArray });
+    };
+
+    const handleFileUpload = async (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
+        if (!e.target.files || !e.target.files[0]) return;
+        const file = e.target.files[0];
+
+        setUploading({ ...uploading, [index]: true });
+
+        try {
+            const data = new FormData();
+            data.append('file', file);
+
+            const res = await api.upload('/upload', apiKey, data);
+
+            // Assuming res.url is the path
+            updateStep(index, 'content', res.url);
+        } catch (err) {
+            console.error(err);
+            alert('Error subiendo archivo');
+        } finally {
+            setUploading({ ...uploading, [index]: false });
+        }
     };
 
     const addStep = (type: string) => {
@@ -177,7 +201,18 @@ const CommandEditor = ({ command, onSave, onCancel }: any) => {
                                     <input type="number" placeholder="MS (ej. 1000)" className="w-full border rounded p-1 text-sm" value={step.content} onChange={(e) => updateStep(i, 'content', e.target.value)} />
                                 ) : (
                                     <div className="space-y-2">
-                                        <textarea placeholder={step.type === 'TEXT' ? 'Mensaje por defecto...' : 'URL...'} className="w-full border rounded p-1 text-sm" rows={2} value={step.content} onChange={(e) => updateStep(i, 'content', e.target.value)} />
+                                        <div className="flex gap-2">
+                                            <textarea placeholder={step.type === 'TEXT' ? 'Mensaje por defecto...' : 'URL...'} className="w-full border rounded p-1 text-sm" rows={2} value={step.content} onChange={(e) => updateStep(i, 'content', e.target.value)} />
+
+                                            {(step.type === 'IMAGE' || step.type === 'AUDIO') && (
+                                                <div className="shrink-0">
+                                                    <label className="cursor-pointer bg-slate-200 hover:bg-slate-300 p-2 rounded block text-center" title="Subir archivo">
+                                                        {uploading[i] ? '...' : '📂'}
+                                                        <input type="file" className="hidden" onChange={(e) => handleFileUpload(i, e)} accept={step.type === 'IMAGE' ? 'image/*' : 'audio/*'} />
+                                                    </label>
+                                                </div>
+                                            )}
+                                        </div>
 
                                         {step.type === 'TEXT' && (
                                             <div className="bg-slate-100 p-2 rounded">

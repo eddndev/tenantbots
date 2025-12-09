@@ -49,10 +49,21 @@ server.register(fastifyStatic, {
     prefix: '/api/static/', // Access via http://host/api/static/image.jpg
 });
 
+import multipart from '@fastify/multipart';
+import { uploadRoutes } from './routes/upload';
+
+// ... imports
+
+// ... server setup ...
+
+// Register Multipart (File Uploads)
+server.register(multipart);
+
 // Register Routes
 server.register(sessionRoutes, { prefix: '/api' });
 server.register(require('./routes/commands').commandRoutes, { prefix: '/api' });
 server.register(require('./routes/interactions').interactionRoutes, { prefix: '/api' });
+server.register(uploadRoutes, { prefix: '/api' });
 
 // Health Check
 server.get('/api/health', async () => {

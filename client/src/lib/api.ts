@@ -38,6 +38,19 @@ export const api = {
         return res.json();
     },
 
+    async upload(endpoint: string, apiKey: string, formData: FormData) {
+        const res = await fetch(`${API_URL}${endpoint}`, {
+            method: 'POST',
+            headers: {
+                'x-api-key': apiKey
+                // Content-Type is automatic with FormData
+            },
+            body: formData
+        });
+        if (!res.ok) throw new Error(await res.text());
+        return res.json();
+    },
+
     async delete(endpoint: string, apiKey: string) {
         const res = await fetch(`${API_URL}${endpoint}`, {
             method: 'DELETE',
