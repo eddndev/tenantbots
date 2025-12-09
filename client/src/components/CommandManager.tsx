@@ -1,6 +1,23 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../lib/api';
-import { Plus, Trash2, Edit2, Save, X } from 'lucide-react';
+import { Plus, Trash2, Edit2, Save, X, GripVertical } from 'lucide-react';
+import {
+    DndContext,
+    closestCenter,
+    KeyboardSensor,
+    PointerSensor,
+    useSensor,
+    useSensors,
+    type DragEndEvent
+} from '@dnd-kit/core';
+import {
+    arrayMove,
+    SortableContext,
+    sortableKeyboardCoordinates,
+    verticalListSortingStrategy,
+    useSortable
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 interface Command {
     id: string;
@@ -70,10 +87,16 @@ export const CommandManager = ({ sessionId, apiKey }: { sessionId: string, apiKe
 
     const handleSave = async (cmd: any) => {
         try {
+            // Remove localId before saving if we added it
+            const cleanCmd = {
+                ...cmd,
+                steps: cmd.steps.map(({ localId, ...rest }: any) => rest)
+            };
+
             if (isNew) {
-                await api.post(`/sessions/${sessionId}/commands`, apiKey, cmd);
+                await api.post(`/sessions/${sessionId}/commands`, apiKey, cleanCmd);
             } else {
-                await api.put(`/commands/${cmd.id}`, apiKey, cmd);
+                await api.put(`/commands/${cmd.id}`, apiKey, cleanCmd);
             }
             setEditingCmd(null);
             fetchCommands();
@@ -156,10 +179,136 @@ export const CommandManager = ({ sessionId, apiKey }: { sessionId: string, apiKe
     );
 };
 
+// Sortable Item Component
+const SortableStepItem = (props: any) => {
+    const { step, index, updateStep, removeStep, uploading, handleFileUpload } = props;
+    const {
+        attributes,
+        listeners,
+        setNodeRef,
+        transform,
+        transition,
+    } = useSortable({ id: step.localId });
+
+    const style = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+    };
+
+    return (
+        <div ref={setNodeRef} style={style} className="flex gap-2 items-start bg-white p-2 border rounded group">
+            <div {...attributes} {...listeners} className="cursor-grab text-slate-400 hover:text-slate-600 pt-2 active:cursor-grabbing">
+                <GripVertical size={16} />
+            </div>
+            <div className="text-xs font-bold w-12 pt-2">{step.type}</div>
+            <div className="flex-1">
+                {step.type === 'DELAY' ? (
+                    <input type="number" placeholder="MS (ej. 1000)" className="w-full border rounded p-1 text-sm" value={step.content} onChange={(e) => updateStep(index, 'content', e.target.value)} />
+                ) : (
+                    <div className="space-y-2">
+                        <div className="flex gap-2">
+                            <textarea placeholder={step.type === 'TEXT' ? 'Mensaje por defecto...' : 'URL...'} className="w-full border rounded p-1 text-sm" rows={2} value={step.content} onChange={(e) => updateStep(index, 'content', e.target.value)} />
+
+                            {(step.type === 'IMAGE' || step.type === 'AUDIO') && (
+                                <div className="shrink-0">
+                                    <label className="cursor-pointer bg-slate-200 hover:bg-slate-300 p-2 rounded block text-center" title="Subir archivo">
+                                        {uploading[index] ? '...' : '📂'}
+                                        <input type="file" className="hidden" onChange={(e) => handleFileUpload(index, e)} accept={step.type === 'IMAGE' ? 'image/*' : 'audio/*'} />
+                                    </label>
+                                </div>
+                            )}
+                        </div>
+
+                        {step.type === 'IMAGE' && (
+                            <div className="mt-1">
+                                <input
+                                    type="text"
+                                    placeholder="Escribe un pie de foto (caption, opcional)..."
+                                    className="w-full border rounded p-1 text-xs"
+                                    value={step.options?.caption || ''}
+                                    onChange={e => updateStep(index, 'options', { ...step.options, caption: e.target.value })}
+                                />
+                            </div>
+                        )}
+
+                        {step.type === 'TEXT' && (
+                            <div className="bg-slate-100 p-2 rounded">
+                                <div className="text-xs font-semibold mb-1 text-slate-600">Condiciones de Horario (Hora México 0-23)</div>
+                                {(step.options?.timeVariants || []).map((v: any, vIndex: number) => (
+                                    <div key={vIndex} className="flex gap-2 mb-2 items-start">
+                                        <div className="flex flex-col gap-1 w-20 shrink-0">
+                                            <input type="number" placeholder="In" className="border rounded p-1 text-xs" value={v.startHour} onChange={e => {
+                                                const newVariants = [...(step.options?.timeVariants || [])];
+                                                newVariants[vIndex].startHour = e.target.value;
+                                                updateStep(index, 'options', { ...step.options, timeVariants: newVariants });
+                                            }} />
+                                            <input type="number" placeholder="Fin" className="border rounded p-1 text-xs" value={v.endHour} onChange={e => {
+                                                const newVariants = [...(step.options?.timeVariants || [])];
+                                                newVariants[vIndex].endHour = e.target.value;
+                                                updateStep(index, 'options', { ...step.options, timeVariants: newVariants });
+                                            }} />
+                                        </div>
+                                        <textarea
+                                            placeholder="Mensaje condicional..."
+                                            className="flex-1 border rounded p-1 text-xs"
+                                            rows={2}
+                                            value={v.content}
+                                            onChange={e => {
+                                                const newVariants = [...(step.options?.timeVariants || [])];
+                                                newVariants[vIndex].content = e.target.value;
+                                                updateStep(index, 'options', { ...step.options, timeVariants: newVariants });
+                                            }}
+                                        />
+                                        <button onClick={() => {
+                                            const newVariants = (step.options?.timeVariants || []).filter((_: any, idx: number) => idx !== vIndex);
+                                            updateStep(index, 'options', { ...step.options, timeVariants: newVariants });
+                                        }} className="text-red-400"><X size={12} /></button>
+                                    </div>
+                                ))}
+                                <button onClick={() => {
+                                    const newVariants = [...(step.options?.timeVariants || []), { startHour: 9, endHour: 18, content: '' }];
+                                    updateStep(index, 'options', { ...step.options, timeVariants: newVariants });
+                                }} className="text-xs text-blue-500 hover:underline">+ Agregar Variante de Horario</button>
+                            </div>
+                        )}
+                    </div>
+                )}
+            </div>
+            <button onClick={() => removeStep(index)} className="text-red-400 hover:text-red-600"><Trash2 size={14} /></button>
+        </div>
+    );
+};
+
 const CommandEditor = ({ command, onSave, onCancel, apiKey }: any) => {
-    const [formData, setFormData] = useState({ ...command });
+    // Initialize with localId if missing
+    const [formData, setFormData] = useState({
+        ...command,
+        steps: (command.steps || []).map((s: any) => ({ ...s, localId: s.id || s.localId || Math.random().toString(36).substr(2, 9) }))
+    });
     const [triggersInput, setTriggersInput] = useState((command.triggers || []).join(', '));
     const [uploading, setUploading] = useState<{ [key: number]: boolean }>({});
+
+    const sensors = useSensors(
+        useSensor(PointerSensor),
+        useSensor(KeyboardSensor, {
+            coordinateGetter: sortableKeyboardCoordinates,
+        })
+    );
+
+    const handleDragEnd = (event: DragEndEvent) => {
+        const { active, over } = event;
+
+        if (active.id !== over?.id) {
+            setFormData((prev: any) => {
+                const oldIndex = prev.steps.findIndex((s: any) => s.localId === active.id);
+                const newIndex = prev.steps.findIndex((s: any) => s.localId === over?.id);
+                return {
+                    ...prev,
+                    steps: arrayMove(prev.steps, oldIndex, newIndex)
+                };
+            });
+        }
+    };
 
     const handleSaveInternal = () => {
         // Parse triggers
@@ -192,7 +341,13 @@ const CommandEditor = ({ command, onSave, onCancel, apiKey }: any) => {
     const addStep = (type: string) => {
         setFormData({
             ...formData,
-            steps: [...formData.steps, { type, content: '', options: {}, order: formData.steps.length + 1 }]
+            steps: [...formData.steps, {
+                type,
+                content: '',
+                options: {},
+                order: formData.steps.length + 1,
+                localId: Math.random().toString(36).substr(2, 9)
+            }]
         });
     };
 
@@ -252,85 +407,28 @@ const CommandEditor = ({ command, onSave, onCancel, apiKey }: any) => {
                     </div>
                 </div>
                 <div className="space-y-2 bg-slate-50 p-4 rounded min-h-[100px]">
-                    {formData.steps.map((step: any, i: number) => (
-                        <div key={i} className="flex gap-2 items-start bg-white p-2 border rounded">
-                            <div className="text-xs font-bold w-12 pt-2">{step.type}</div>
-                            <div className="flex-1">
-                                {step.type === 'DELAY' ? (
-                                    <input type="number" placeholder="MS (ej. 1000)" className="w-full border rounded p-1 text-sm" value={step.content} onChange={(e) => updateStep(i, 'content', e.target.value)} />
-                                ) : (
-                                    <div className="space-y-2">
-                                        <div className="flex gap-2">
-                                            <textarea placeholder={step.type === 'TEXT' ? 'Mensaje por defecto...' : 'URL...'} className="w-full border rounded p-1 text-sm" rows={2} value={step.content} onChange={(e) => updateStep(i, 'content', e.target.value)} />
-
-                                            {(step.type === 'IMAGE' || step.type === 'AUDIO') && (
-                                                <div className="shrink-0">
-                                                    <label className="cursor-pointer bg-slate-200 hover:bg-slate-300 p-2 rounded block text-center" title="Subir archivo">
-                                                        {uploading[i] ? '...' : '📂'}
-                                                        <input type="file" className="hidden" onChange={(e) => handleFileUpload(i, e)} accept={step.type === 'IMAGE' ? 'image/*' : 'audio/*'} />
-                                                    </label>
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        {step.type === 'IMAGE' && (
-                                            <div className="mt-1">
-                                                <input
-                                                    type="text"
-                                                    placeholder="Escribe un pie de foto (caption, opcional)..."
-                                                    className="w-full border rounded p-1 text-xs"
-                                                    value={step.options?.caption || ''}
-                                                    onChange={e => updateStep(i, 'options', { ...step.options, caption: e.target.value })}
-                                                />
-                                            </div>
-                                        )}
-
-                                        {step.type === 'TEXT' && (
-                                            <div className="bg-slate-100 p-2 rounded">
-                                                <div className="text-xs font-semibold mb-1 text-slate-600">Condiciones de Horario (Hora México 0-23)</div>
-                                                {(step.options?.timeVariants || []).map((v: any, vIndex: number) => (
-                                                    <div key={vIndex} className="flex gap-2 mb-2 items-start">
-                                                        <div className="flex flex-col gap-1 w-20 shrink-0">
-                                                            <input type="number" placeholder="In" className="border rounded p-1 text-xs" value={v.startHour} onChange={e => {
-                                                                const newVariants = [...(step.options?.timeVariants || [])];
-                                                                newVariants[vIndex].startHour = e.target.value;
-                                                                updateStep(i, 'options', { ...step.options, timeVariants: newVariants });
-                                                            }} />
-                                                            <input type="number" placeholder="Fin" className="border rounded p-1 text-xs" value={v.endHour} onChange={e => {
-                                                                const newVariants = [...(step.options?.timeVariants || [])];
-                                                                newVariants[vIndex].endHour = e.target.value;
-                                                                updateStep(i, 'options', { ...step.options, timeVariants: newVariants });
-                                                            }} />
-                                                        </div>
-                                                        <textarea
-                                                            placeholder="Mensaje condicional..."
-                                                            className="flex-1 border rounded p-1 text-xs"
-                                                            rows={2}
-                                                            value={v.content}
-                                                            onChange={e => {
-                                                                const newVariants = [...(step.options?.timeVariants || [])];
-                                                                newVariants[vIndex].content = e.target.value;
-                                                                updateStep(i, 'options', { ...step.options, timeVariants: newVariants });
-                                                            }}
-                                                        />
-                                                        <button onClick={() => {
-                                                            const newVariants = (step.options?.timeVariants || []).filter((_: any, idx: number) => idx !== vIndex);
-                                                            updateStep(i, 'options', { ...step.options, timeVariants: newVariants });
-                                                        }} className="text-red-400"><X size={12} /></button>
-                                                    </div>
-                                                ))}
-                                                <button onClick={() => {
-                                                    const newVariants = [...(step.options?.timeVariants || []), { startHour: 9, endHour: 18, content: '' }];
-                                                    updateStep(i, 'options', { ...step.options, timeVariants: newVariants });
-                                                }} className="text-xs text-blue-500 hover:underline">+ Agregar Variante de Horario</button>
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-                            </div>
-                            <button onClick={() => removeStep(i)} className="text-red-400 hover:text-red-600"><Trash2 size={14} /></button>
-                        </div>
-                    ))}
+                    <DndContext
+                        sensors={sensors}
+                        collisionDetection={closestCenter}
+                        onDragEnd={handleDragEnd}
+                    >
+                        <SortableContext
+                            items={formData.steps.map((s: any) => s.localId)}
+                            strategy={verticalListSortingStrategy}
+                        >
+                            {formData.steps.map((step: any, i: number) => (
+                                <SortableStepItem
+                                    key={step.localId}
+                                    step={step}
+                                    index={i}
+                                    updateStep={updateStep}
+                                    removeStep={removeStep}
+                                    uploading={uploading}
+                                    handleFileUpload={handleFileUpload}
+                                />
+                            ))}
+                        </SortableContext>
+                    </DndContext>
                 </div>
             </div>
 
