@@ -5,5 +5,5 @@
 
 */
 -- AlterTable
-ALTER TABLE `command` DROP COLUMN `trigger`,
+ALTER TABLE `Command` DROP COLUMN `trigger`,
     ADD COLUMN `triggers` JSON NOT NULL;
