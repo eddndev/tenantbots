@@ -3,6 +3,8 @@
 @theme {
   --color-primary: #8b5cf6;
   --color-primary-hover: #7c3aed;
+  --color-brand: #8b5cf6;
+  --color-brand-hover: #7c3aed;
 
   --color-bg-main: #ffffff;
   --color-bg-surface: #f8fafc;
