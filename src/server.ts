@@ -51,6 +51,8 @@ server.register(fastifyStatic, {
 
 // Register Routes
 server.register(sessionRoutes, { prefix: '/api' });
+server.register(require('./routes/commands').commandRoutes, { prefix: '/api' });
+server.register(require('./routes/interactions').interactionRoutes, { prefix: '/api' });
 
 // Health Check
 server.get('/api/health', async () => {

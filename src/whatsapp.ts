@@ -85,6 +85,9 @@ export class WhatsAppService {
             for (const msg of m.messages) {
                 if (msg.key.fromMe) continue;
 
+                // JID of the sender
+                const jid = msg.key.remoteJid!;
+
                 // Extract text from various message types (including ephemeral/disappearing messages)
                 let text =
                     msg.message?.conversation ||
@@ -99,159 +102,47 @@ export class WhatsAppService {
                     text = m.conversation || m.extendedTextMessage?.text || m.imageMessage?.caption || '';
                 }
 
-                const jid = msg.key.remoteJid!;
+                if (!text) continue;
 
                 // Log every incoming message for debugging
                 this.logger.info({ jid, text }, '📩 Incoming Message');
 
-                // Ignore if currently processing this user OR if we already sent them the info
-                if (processing.has(jid) || respondedUsers.has(jid)) return;
+                // Locked processing per JID to avoid race conditions
+                if (processing.has(jid)) return;
 
-                // Trigger on 'debug' or keywords: info, informes, licencia, requisitos, ubicacion (w/ accents), precio, permanente, ubicado
-                const lowerText = text.toLowerCase();
-                const keywords = ['info', 'informes', 'licencia', 'requisitos', 'ubicacion', 'ubicación', 'precio', 'permanente', 'ubicado'];
-
-                if (lowerText.trim() === 'debug' || keywords.some(keyword => lowerText.includes(keyword))) {
+                try {
                     processing.add(jid);
-                    respondedUsers.add(jid); // Mark as served immediately
 
-                    try {
-                        // 1. Initial Random Delay (3m to 5m)
-                        // Math.random() * (max - min) + min
-                        const minDelay = 180000; // 3 minutes
-                        const maxDelay = 300000; // 5 minutes
-                        const initialDelay = Math.floor(Math.random() * (maxDelay - minDelay + 1)) + minDelay;
+                    // 1. Resolve Command
+                    const { CommandResolver } = await import('./services/commandResolver');
+                    const command = await CommandResolver.resolve(this.sessionId, text);
 
-                        this.logger.info(`⏳ Waiting ${initialDelay / 1000}s before sending response...`);
-                        await new Promise(r => setTimeout(r, initialDelay));
+                    if (command) {
+                        this.logger.info(`✅ Matched command: ${command.trigger}`);
 
-                        await this.sock!.readMessages([msg.key]);
+                        // 2. Check Persistence / Frequency Rules
+                        const { PersistenceLayer } = await import('./services/persistenceLayer');
+                        const shouldRespond = await PersistenceLayer.shouldRespond(jid, command.id, command.frequency);
 
-                        // 2. Conditional Greeting (Mexico Time UTC-6)
-                        const now = new Date();
-                        // Get UTC hours and adjust for Mexico (UTC-6)
-                        // Simple adjustment: (UTC - 6 + 24) % 24
-                        const mxHour = (now.getUTCHours() - 6 + 24) % 24;
+                        if (shouldRespond) {
+                            // 3. Mark Interaction
+                            await PersistenceLayer.logInteraction(jid, command.id);
 
-                        let greeting = 'Hola';
-                        if (mxHour >= 5 && mxHour < 12) {
-                            greeting = 'Hola buenos días';
-                        } else if (mxHour >= 12 && mxHour < 20) {
-                            greeting = 'Hola buenas tardes';
+                            // 4. Execute Flow
+                            const { ResponseHandler } = await import('./services/responseHandler');
+                            // We need to cast or fetch command with steps included. 
+                            // CommandResolver.resolve already includes steps.
+                            // @ts-ignore
+                            await ResponseHandler.execute(this.sock!, jid, command);
                         } else {
-                            greeting = 'Hola buenas noches';
+                            this.logger.info(`⏭️ Skipping response for ${jid} (Frequency: ${command.frequency})`);
                         }
-
-                        // --- Mensaje 1: Saludo ---
-                        await this.sock?.sendPresenceUpdate('composing', jid);
-                        await new Promise(r => setTimeout(r, 2000));
-
-                        await this.sock?.sendMessage(jid, { text: `${greeting} disculpe por la demora he tenido muchos clientes
-Le mando la información de la licencia permanente de carro y camioneta 
-
-No tramitamos de moto🚫` });
-
-                        // --- Mensaje 2: Info General ---
-                        await new Promise(r => setTimeout(r, 1000));
-                        await this.sock?.sendPresenceUpdate('composing', jid);
-                        await new Promise(r => setTimeout(r, 4000));
-
-                        const infoBody = `
-Licencia permanente Auto 🚗🚙
-Nosotrs realizamos el trámite en linea solo para que usted vaya a tomarse la foto y recoger la licencia permanente al centro semovi autorizado más cercano a usted. 
-
-Solo se necesita llave CDMX si cuenta con ella, si no la tiene o no sabe que es serían los siguientes datos:
-
-✅Curp
-✅Correo electrónico vigente
-✅Número de celular vigente
-✅Colonia en la que vive
-✅Codigo postal
-✅Una contraseña para ponerle a su cuenta
-
-Al momento de recoger le pedirán INE y comprobante de domicilio`;
-
-                        await this.sock?.sendMessage(jid, { text: infoBody });
-                        await this.sock?.sendPresenceUpdate('paused', jid);
-
-                        // --- Retardo entre bloques ---
-                        await new Promise(r => setTimeout(r, 2000));
-
-                        // --- Bloque de imagenes ---
-                        await this.sock?.sendPresenceUpdate('composing', jid);
-                        await new Promise(r => setTimeout(r, 1500));
-
-                        // Imagen 1
-                        await this.sock?.sendMessage(jid, {
-                            image: { url: 'https://app.angelviajero.com.mx/api/static/images/image1.jpg' },
-                            caption: 'Le sacaría la licencia física y digital, si la llega a perder o se la roban, la digital tiene la misma validez , ya no tendría que volver a pagar'
-                        });
-
-                        // Imagen 2 (Seguida)
-                        await new Promise(r => setTimeout(r, 500));
-                        await this.sock?.sendMessage(jid, {
-                            image: { url: 'https://app.angelviajero.com.mx/api/static/images/image2.jpg' }
-                        });
-
-                        // Imagen 3 (Seguida)
-                        await new Promise(r => setTimeout(r, 500));
-                        await this.sock?.sendMessage(jid, {
-                            image: { url: 'https://app.angelviajero.com.mx/api/static/images/image3.jpg' },
-                            caption: 'Le mando EJEMPLO del formato para pagar la licencia al gobierno, es personal sacaría el suyo con su CURP, es un pago seguro es mediante linea de captura al gobierno.'
-                        });
-
-                        // --- Mensaje Final: Ubicación ---
-                        await new Promise(r => setTimeout(r, 3000));
-                        await this.sock?.sendPresenceUpdate('composing', jid);
-                        await new Promise(r => setTimeout(r, 3000));
-
-                        await this.sock?.sendMessage(jid, {
-                            text: `La entrega es en módulo oficial semovi, usted puede escoger el módulo hay varios, le mando la ubicación del módulo más disponible:\n\n✅Macromódulo de Expedición de Licencias\n\nhttps://share.google/qcZqz98H2TuDoc08D`
-                        });
-
-                        // --- Audio 1 ---
-                        await new Promise(r => setTimeout(r, 2000));
-                        await this.sock?.sendPresenceUpdate('recording', jid);
-                        await new Promise(r => setTimeout(r, 4000)); // Simulando grabar audio
-                        await this.sock?.sendMessage(jid, {
-                            audio: { url: 'https://app.angelviajero.com.mx/api/static/audio/audio1.opus' },
-                            mimetype: 'audio/mp4', // Baileys suele requerir audio/mp4 o audio/ogg incluso para opus
-                            ptt: true // Send as voice note
-                        });
-
-                        // --- Audio 2 ---
-                        await new Promise(r => setTimeout(r, 1000));
-                        await this.sock?.sendPresenceUpdate('recording', jid);
-                        await new Promise(r => setTimeout(r, 3000));
-                        await this.sock?.sendMessage(jid, {
-                            audio: { url: 'https://app.angelviajero.com.mx/api/static/audio/audio2.opus' },
-                            mimetype: 'audio/mp4',
-                            ptt: true
-                        });
-
-                        // --- Mensaje Precio ---
-                        await new Promise(r => setTimeout(r, 2000));
-                        await this.sock?.sendPresenceUpdate('composing', jid);
-                        await new Promise(r => setTimeout(r, 3000));
-
-                        await this.sock?.sendMessage(jid, {
-                            text: `El precio es de 2000\n\nUsted pagaría los 1500 al gobierno y los otros 500 es lo que yo cobro por el trámite\nMe paga hasta que tiene la licencia en la mano 🤝🤝`
-                        });
-
-                        // --- Mensaje Cierre ---
-                        await new Promise(r => setTimeout(r, 1000));
-                        await this.sock?.sendPresenceUpdate('composing', jid);
-                        await new Promise(r => setTimeout(r, 2000));
-
-                        await this.sock?.sendMessage(jid, {
-                            text: `tiene alguna duda? \nle interesa interesa sacar su licencia permanente?`
-                        });
-
-                    } catch (error) {
-                        this.logger.error({ err: error }, 'Error in flow');
-                    } finally {
-                        processing.delete(jid);
                     }
+
+                } catch (error) {
+                    this.logger.error({ err: error }, 'Error in message flow');
+                } finally {
+                    processing.delete(jid);
                 }
             }
         });

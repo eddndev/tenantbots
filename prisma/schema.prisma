@@ -16,4 +16,53 @@ model Session {
   config      Json?    // Stores delays, webhook URLs, etc.
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  
+  commands    Command[]
+}
+
+model Command {
+  id          String   @id @default(uuid())
+  sessionId   String
+  session     Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  trigger     String   // The keyword or phrase
+  matchType   String   @default("CONTAINS") // EXACT, CONTAINS, STARTS_WITH
+  
+  isEnabled   Boolean  @default(true)
+  frequency   String   @default("ALWAYS") // ALWAYS, ONCE
+
+  steps       FlowStep[]
+  interactions UserInteraction[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([sessionId])
+}
+
+model FlowStep {
+  id          String   @id @default(uuid())
+  commandId   String
+  command     Command  @relation(fields: [commandId], references: [id], onDelete: Cascade)
+  
+  order       Int      // 1, 2, 3...
+  type        String   // TEXT, IMAGE, AUDIO, DELAY
+  content     String   @db.Text // The text message or media URL or delay in ms
+  options     Json?    // Extra options like { ptt: true, caption: "..." }
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([commandId])
+}
+
+model UserInteraction {
+  id          String   @id @default(uuid())
+  commandId   String
+  command     Command  @relation(fields: [commandId], references: [id], onDelete: Cascade)
+  
+  userJid     String   // The user's phone number JID
+  createdAt   DateTime @default(now())
+
+  @@index([commandId])
+  @@index([userJid])
 }

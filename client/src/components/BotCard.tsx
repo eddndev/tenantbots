@@ -129,10 +129,16 @@ export const BotCard = ({ id, name, initialStatus, apiKey, onDelete }: BotProps)
                 <button
                     onClick={handleStart}
                     disabled={status === 'CONNECTED' || loading || deleting}
-                    className="flex-1 bg-primary hover:bg-primary-hover text-white py-2 px-4 rounded-lg font-medium text-sm transition-colors flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-primary/20"
+                    className="flex-1 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 py-2 px-4 rounded-lg font-medium text-sm transition-colors flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                    {status === 'CONNECTED' ? 'Funcionando' : 'Iniciar Bot'}
+                    {status === 'CONNECTED' ? 'Reconectar' : 'Iniciar'}
                 </button>
+                <a
+                    href={`/manage?id=${id}`}
+                    className="flex-1 bg-brand hover:bg-brand-hover text-white py-2 px-4 rounded-lg font-medium text-sm transition-colors flex items-center justify-center shadow-lg shadow-brand/20 text-center"
+                >
+                    Administrar
+                </a>
             </div>
         </div>
     );

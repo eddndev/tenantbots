@@ -25,6 +25,19 @@ export const api = {
         return res.json();
     },
 
+    async put(endpoint: string, apiKey: string, body: any) {
+        const res = await fetch(`${API_URL}${endpoint}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-api-key': apiKey
+            },
+            body: JSON.stringify(body)
+        });
+        if (!res.ok) throw new Error(await res.text());
+        return res.json();
+    },
+
     async delete(endpoint: string, apiKey: string) {
         const res = await fetch(`${API_URL}${endpoint}`, {
             method: 'DELETE',
